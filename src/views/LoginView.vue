@@ -15,6 +15,7 @@ const loginForm = reactive({
 
 const feedback = ref('')
 const ssoMessage = ref('')
+const isSubmitting = ref(false)
 
 const demoAccounts = [
   {
@@ -40,8 +41,10 @@ function useDemoAccount(account) {
   feedback.value = ''
 }
 
-function submitLogin() {
-  const result = accessStore.login(loginForm)
+async function submitLogin() {
+  isSubmitting.value = true
+  const result = await accessStore.login(loginForm)
+  isSubmitting.value = false
 
   if (!result.ok) {
     feedback.value = result.message
@@ -90,6 +93,10 @@ function showSsoMessage() {
       </div>
 
       <form class="login-form" @submit.prevent="submitLogin">
+        <div v-if="accessStore.initializeError" class="notice notice-error">
+          {{ accessStore.initializeError }}
+        </div>
+
         <label>
           <span>邮箱</span>
           <input v-model="loginForm.email" type="email" placeholder="name@example.com" />
@@ -102,7 +109,9 @@ function showSsoMessage() {
 
         <div v-if="feedback" class="notice notice-error">{{ feedback }}</div>
 
-        <button class="button" type="submit">邮箱登录</button>
+        <button class="button" type="submit" :disabled="isSubmitting">
+          {{ isSubmitting ? '登录中...' : '邮箱登录' }}
+        </button>
         <button class="button button-secondary" type="button" @click="showSsoMessage">
           Azure AD SSO（预留）
         </button>
@@ -138,13 +147,13 @@ function showSsoMessage() {
   min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(340px, 460px);
-  gap: 24px;
-  padding: 24px;
+  gap: 16px;
+  padding: 16px;
 }
 
 .login-hero,
 .login-card {
-  padding: 32px;
+  padding: 22px;
 }
 
 .login-hero {
@@ -157,8 +166,8 @@ function showSsoMessage() {
 
 .page-intro h2,
 .login-hero h1 {
-  margin: 8px 0 12px;
-  font-size: clamp(2rem, 3vw, 3.3rem);
+  margin: 6px 0 10px;
+  font-size: clamp(1.6rem, 2.8vw, 2.6rem);
   line-height: 1.05;
   color: var(--color-text);
 }
@@ -166,18 +175,18 @@ function showSsoMessage() {
 .page-intro p,
 .hero-copy {
   margin: 0;
-  line-height: 1.8;
+  line-height: 1.55;
   color: var(--color-text-soft);
 }
 
 .hero-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
 }
 
 .hero-stat {
-  padding: 18px;
+  padding: 14px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid rgba(10, 110, 209, 0.08);
@@ -186,37 +195,37 @@ function showSsoMessage() {
 .hero-stat span,
 .demo-header span {
   display: block;
-  font-size: 0.83rem;
+  font-size: 0.78rem;
   color: var(--color-text-soft);
 }
 
 .hero-stat strong {
   display: block;
-  margin-top: 10px;
-  font-size: 1rem;
+  margin-top: 8px;
+  font-size: 0.92rem;
   color: var(--color-text);
 }
 
 .login-card {
   display: grid;
-  gap: 24px;
+  gap: 16px;
   align-content: start;
 }
 
 .login-form {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .demo-section {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .demo-header {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -226,18 +235,18 @@ function showSsoMessage() {
 
 .demo-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .demo-chip {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
   align-items: center;
   width: 100%;
   border: 1px solid rgba(10, 110, 209, 0.08);
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 10px 12px;
   background: rgba(248, 250, 252, 0.85);
   text-align: left;
 }
@@ -248,23 +257,39 @@ function showSsoMessage() {
 
 .demo-chip span {
   color: var(--color-text-soft);
-  font-size: 0.88rem;
+  font-size: 0.8rem;
 }
 
 @media (max-width: 920px) {
   .login-page {
     grid-template-columns: 1fr;
-    padding: 16px;
+    padding: 12px;
   }
 
   .login-hero,
   .login-card {
-    padding: 24px;
+    padding: 18px;
   }
 
   .demo-chip {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-page {
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .login-hero,
+  .login-card {
+    padding: 16px;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -13,6 +13,14 @@
 	"upload_source_maps": true,
 	"compatibility_flags": [
 		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "equipment_inspection_v2",
+			"database_id": "db46e249-9216-4830-a4d1-516632680fae"
+			,"preview_database_id": "db46e249-9216-4830-a4d1-516632680fae"
+		}
 	]
 	/**
 	 * Smart Placement

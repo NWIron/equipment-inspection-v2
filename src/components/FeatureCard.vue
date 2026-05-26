@@ -11,30 +11,22 @@ defineProps({
 
 <template>
   <RouterLink :to="feature.path" class="feature-card surface-card" :data-accent="feature.accent">
-    <div class="feature-card__header">
-      <div class="feature-card__icon">{{ feature.shortLabel }}</div>
-      <span class="status-pill">{{ feature.phaseLabel }}</span>
-    </div>
-
     <div class="feature-card__body">
       <p class="feature-card__category">{{ feature.category }}</p>
       <h3>{{ feature.title }}</h3>
       <p>{{ feature.summary }}</p>
     </div>
 
-    <div class="feature-card__footer">
-      <span class="tag">角色驱动</span>
-      <span class="feature-card__cta">进入模块</span>
-    </div>
+    <span class="feature-card__cta">进入模块</span>
   </RouterLink>
 </template>
 
 <style scoped>
 .feature-card {
   display: grid;
-  gap: 18px;
-  padding: 22px;
-  min-height: 240px;
+  gap: 12px;
+  padding: 16px;
+  min-height: 168px;
   border-radius: 10px;
   transition:
     transform 0.2s ease,
@@ -63,47 +55,32 @@ defineProps({
   border-top: 4px solid #4f6b8b;
 }
 
-.feature-card__header,
-.feature-card__footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
-.feature-card__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  color: var(--color-brand);
-  background: rgba(10, 110, 209, 0.1);
-}
-
 .feature-card__category {
-  margin: 0 0 10px;
-  font-size: 0.8rem;
+  margin: 0 0 6px;
+  font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-soft);
 }
 
 .feature-card__body h3 {
-  margin: 0 0 10px;
-  font-size: 1.25rem;
+  margin: 0 0 6px;
+  font-size: 1.02rem;
   color: var(--color-text);
 }
 
 .feature-card__body p:last-child {
   margin: 0;
-  line-height: 1.7;
+  line-height: 1.5;
+  font-size: 0.85rem;
   color: var(--color-text-soft);
 }
 
 .feature-card__cta {
+  display: inline-flex;
+  align-items: center;
   font-weight: 600;
+  font-size: 0.84rem;
   color: var(--color-brand);
 }
 </style>

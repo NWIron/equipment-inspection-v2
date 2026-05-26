@@ -7,6 +7,8 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "npm run build && wrangler pages dev",
+		"db:init:local": "wrangler d1 execute equipment_inspection_v2 --local --file=./database/001_init.sql",
+		"db:init:remote": "wrangler d1 execute equipment_inspection_v2 --remote --file=./database/001_init.sql",
 		"format": "prettier --write --experimental-cli src/",
 		"deploy": "npm run build && wrangler pages deploy",
 		"cf-typegen": "wrangler types"

@@ -1,22 +1,11 @@
 <script setup>
 import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { RouterView, useRouter } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
 
-const route = useRoute()
 const router = useRouter()
 const accessStore = useAccessStore()
-
-const quickLinks = computed(() => {
-  const links = [{ label: '工作台', to: { name: 'home' } }]
-
-  if (accessStore.canAccessFeature('access-management')) {
-    links.push({ label: '用户与权限', to: { name: 'access-management' } })
-  }
-
-  return links
-})
 
 const currentRoleLabel = computed(() => accessStore.activeRoles.map((role) => role.name).join(' / '))
 
@@ -37,18 +26,6 @@ function handleLogout() {
         </div>
       </div>
 
-      <nav class="shell-nav" aria-label="Primary">
-        <RouterLink
-          v-for="link in quickLinks"
-          :key="link.label"
-          :to="link.to"
-          class="shell-link"
-          :class="{ 'is-active': route.name === link.to.name }"
-        >
-          {{ link.label }}
-        </RouterLink>
-      </nav>
-
       <div class="user-panel">
         <div>
           <p class="user-name">{{ accessStore.activeUser?.name }}</p>
@@ -67,26 +44,26 @@ function handleLogout() {
 <style scoped>
 .app-shell {
   min-height: 100vh;
-  padding: 24px;
+  padding: 16px;
 }
 
 .shell-header {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
   align-items: center;
-  padding: 20px 24px;
+  padding: 14px 16px;
 }
 
 .brand-block {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
 }
 
 .brand-mark {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   display: grid;
   place-items: center;
@@ -100,65 +77,57 @@ function handleLogout() {
 .shell-kicker,
 .user-role {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   color: var(--color-text-soft);
 }
 
 .shell-title,
 .user-name {
   margin: 4px 0 0;
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   color: var(--color-text);
-}
-
-.shell-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.shell-link {
-  padding: 10px 16px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  color: var(--color-text-soft);
-  transition: all 0.2s ease;
-}
-
-.shell-link:hover,
-.shell-link.is-active {
-  color: var(--color-text);
-  border-color: rgba(10, 110, 209, 0.18);
-  background: rgba(10, 110, 209, 0.08);
 }
 
 .user-panel {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   justify-content: flex-end;
 }
 
 .shell-main {
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 @media (max-width: 980px) {
   .app-shell {
-    padding: 16px;
+    padding: 12px;
   }
 
   .shell-header {
     grid-template-columns: 1fr;
-  }
-
-  .shell-nav {
-    justify-content: flex-start;
+    padding: 12px;
   }
 
   .user-panel {
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  .shell-title,
+  .user-name {
+    font-size: 1rem;
+  }
+
+  .user-panel {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>
