@@ -169,6 +169,19 @@ export const useAccessStore = defineStore('access', () => {
     return result
   }
 
+  async function updateUser(userId, payload) {
+    const result = await requestAccessApi(`/api/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+
+    if (result.ok) {
+      applyPayload(result)
+    }
+
+    return result
+  }
+
   async function createRole(payload) {
     const result = await requestAccessApi('/api/roles', {
       method: 'POST',
@@ -224,6 +237,7 @@ export const useAccessStore = defineStore('access', () => {
     roles,
     sessionUserId,
     toggleUserStatus,
+    updateUser,
     userDirectory,
     users,
   }

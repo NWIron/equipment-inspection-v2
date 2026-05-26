@@ -7,6 +7,7 @@ const accessStore = useAccessStore()
 const activeTab = ref('users')
 const isUserModalOpen = ref(false)
 const isRoleModalOpen = ref(false)
+const editingUserId = ref('')
 
 const userForm = reactive({
   accountName: '',
@@ -32,14 +33,37 @@ const isSavingRole = ref(false)
 
 const users = computed(() => accessStore.userDirectory)
 const roles = computed(() => accessStore.roles)
+const isEditingUser = computed(() => Boolean(editingUserId.value))
+const userModalTitle = computed(() => (isEditingUser.value ? '编辑用户' : '创建用户'))
+const userSubmitLabel = computed(() => {
+  if (isSavingUser.value) {
+    return isEditingUser.value ? '保存中...' : '创建中...'
+  }
+
+  return isEditingUser.value ? '保存修改' : '创建用户'
+})
 
 function openUserModal() {
+  userFeedback.value = ''
+  editingUserId.value = ''
+  isUserModalOpen.value = true
+}
+
+function openUserEditModal(user) {
+  editingUserId.value = user.id
+  userForm.accountName = user.accountName
+  userForm.name = user.name
+  userForm.email = user.email
+  userForm.phone = user.phone
+  userForm.password = ''
+  userForm.roleIds = [...user.roleIds]
   userFeedback.value = ''
   isUserModalOpen.value = true
 }
 
 function closeUserModal() {
   isUserModalOpen.value = false
+  editingUserId.value = ''
   resetUserForm()
   userFeedback.value = ''
 }
@@ -82,7 +106,15 @@ function setRoleFeedback(result) {
 
 async function submitUser() {
   isSavingUser.value = true
-  const result = await accessStore.createUser(userForm)
+  const result = isEditingUser.value
+    ? await accessStore.updateUser(editingUserId.value, {
+        accountName: userForm.accountName,
+        name: userForm.name,
+        email: userForm.email,
+        phone: userForm.phone,
+        roleIds: userForm.roleIds,
+      })
+    : await accessStore.createUser(userForm)
   isSavingUser.value = false
   setUserFeedback(result)
 
@@ -172,49 +204,44 @@ async function removeRole(roleId) {
           {{ userFeedback }}
         </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>账号</th>
-                <th>姓名</th>
-                <th>联系方式</th>
-                <th>角色</th>
-                <th>状态</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="user in users" :key="user.id">
-                <td>
-                  <strong>{{ user.accountName }}</strong>
-                  <div class="table-subline">{{ user.email }}</div>
-                </td>
-                <td>{{ user.name }}</td>
-                <td>{{ user.phone }}</td>
-                <td>
-                  <div class="tag-row compact-tags">
-                    <span v-for="role in user.roles" :key="role.id" class="tag">{{ role.name }}</span>
-                  </div>
-                </td>
-                <td>
-                  <span class="status-pill" :class="user.disabled ? 'status-danger' : 'status-success'">
-                    {{ user.disabled ? '禁用' : '启用' }}
-                  </span>
-                </td>
-                <td>
-                  <div class="action-row">
-                    <button class="button button-ghost" type="button" @click="toggleUser(user.id)">
-                      {{ user.disabled ? '启用' : '禁用' }}
-                    </button>
-                    <button class="button button-danger" type="button" @click="removeUser(user.id)">
-                      删除
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="user-list">
+          <article v-for="user in users" :key="user.id" class="user-item">
+            <div class="user-item__header">
+              <div>
+                <h4>{{ user.name }}</h4>
+                <p>{{ user.accountName }} · {{ user.email }}</p>
+              </div>
+              <div class="action-row">
+                <span class="status-pill" :class="user.disabled ? 'status-danger' : 'status-success'">
+                  {{ user.disabled ? '禁用' : '启用' }}
+                </span>
+                <button class="button button-ghost" type="button" @click="openUserEditModal(user)">
+                  编辑
+                </button>
+                <button class="button button-ghost" type="button" @click="toggleUser(user.id)">
+                  {{ user.disabled ? '启用' : '禁用' }}
+                </button>
+                <button class="button button-danger" type="button" @click="removeUser(user.id)">
+                  删除
+                </button>
+              </div>
+            </div>
+
+            <div class="user-item__meta">
+              <div class="user-meta-block">
+                <span class="user-meta-label">手机号</span>
+                <strong>{{ user.phone }}</strong>
+              </div>
+              <div class="user-meta-block">
+                <span class="user-meta-label">最近登录</span>
+                <strong>{{ user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : '未登录' }}</strong>
+              </div>
+            </div>
+
+            <div class="tag-row compact-tags">
+              <span v-for="role in user.roles" :key="role.id" class="tag">{{ role.name }}</span>
+            </div>
+          </article>
         </div>
       </div>
 
@@ -269,7 +296,7 @@ async function removeRole(roleId) {
         <div class="section-headline modal-headline">
           <div>
             <p class="kicker">Users</p>
-            <h3 class="section-title">创建用户</h3>
+            <h3 class="section-title">{{ userModalTitle }}</h3>
           </div>
           <button class="button button-ghost" type="button" @click="closeUserModal">关闭</button>
         </div>
@@ -301,7 +328,12 @@ async function removeRole(roleId) {
 
           <label>
             <span>密码</span>
-            <input v-model="userForm.password" type="password" placeholder="至少 6 位" />
+            <input
+              v-model="userForm.password"
+              type="password"
+              :placeholder="isEditingUser ? '编辑主数据时无需修改密码' : '至少 6 位'"
+              :disabled="isEditingUser"
+            />
           </label>
 
           <fieldset class="selection-fieldset">
@@ -316,9 +348,7 @@ async function removeRole(roleId) {
 
           <div class="modal-actions">
             <button class="button button-ghost" type="button" @click="closeUserModal">取消</button>
-            <button class="button" type="submit" :disabled="isSavingUser">
-              {{ isSavingUser ? '创建中...' : '创建用户' }}
-            </button>
+            <button class="button" type="submit" :disabled="isSavingUser">{{ userSubmitLabel }}</button>
           </div>
         </form>
       </section>
@@ -391,25 +421,33 @@ async function removeRole(roleId) {
 }
 
 .tab-bar {
-  display: flex;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(18, 50, 74, 0.08);
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(18, 50, 74, 0.05);
 }
 
 .tab-button {
-  min-height: 32px;
-  padding: 0 12px;
-  border: 1px solid rgba(18, 50, 74, 0.1);
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid transparent;
   border-radius: 8px;
-  background: rgba(248, 250, 252, 0.9);
+  background: transparent;
   color: var(--color-text-soft);
+  font-weight: 600;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .tab-button.is-active {
-  border-color: rgba(10, 110, 209, 0.18);
-  background: rgba(10, 110, 209, 0.08);
+  border-color: rgba(10, 110, 209, 0.1);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--color-text);
+  box-shadow: 0 6px 16px rgba(18, 50, 74, 0.08);
 }
 
 .tab-panel {
@@ -436,6 +474,60 @@ async function removeRole(roleId) {
   margin-top: 4px;
   color: var(--color-text-soft);
   font-size: 0.8rem;
+}
+
+.user-list,
+.role-list {
+  display: grid;
+  gap: 10px;
+}
+
+.user-item,
+.role-item {
+  padding: 14px;
+  border: 1px solid rgba(10, 110, 209, 0.08);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.76);
+}
+
+.user-item__header,
+.role-item__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.user-item__header h4,
+.role-item__header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.user-item__header p {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-soft);
+}
+
+.user-item__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.user-meta-block {
+  display: grid;
+  gap: 4px;
+}
+
+.user-meta-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-soft);
 }
 
 .compact-tags {
@@ -475,33 +567,9 @@ async function removeRole(roleId) {
   gap: 8px;
 }
 
-.role-list {
-  display: grid;
-  gap: 10px;
-}
-
-.role-item {
-  padding: 14px;
-  border: 1px solid rgba(10, 110, 209, 0.08);
-  border-radius: 8px;
-  background: rgba(248, 250, 252, 0.76);
-}
-
-.role-item__header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.role-item__header h4 {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--color-text);
-}
-
 @media (max-width: 720px) {
   .tab-bar,
+  .user-item__header,
   .section-headline,
   .role-item__header {
     align-items: flex-start;
