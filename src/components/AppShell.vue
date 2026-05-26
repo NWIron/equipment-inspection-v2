@@ -87,7 +87,7 @@ function handleLogout() {
 .brand-mark {
   width: 52px;
   height: 52px;
-  border-radius: 16px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -120,7 +120,7 @@ function handleLogout() {
 
 .shell-link {
   padding: 10px 16px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid transparent;
   color: var(--color-text-soft);
   transition: all 0.2s ease;

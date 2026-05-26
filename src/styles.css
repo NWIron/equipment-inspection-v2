@@ -11,13 +11,13 @@
   --color-accent: #00a58a;
   --color-text: #12324a;
   --color-text-soft: #567189;
-  --color-border: rgba(18, 50, 74, 0.1);
+  --color-border: rgba(18, 50, 74, 0.16);
   --color-surface: rgba(255, 255, 255, 0.88);
   --color-danger: #c0392b;
   --color-success: #11865b;
-  --shadow-soft: 0 18px 36px rgba(18, 50, 74, 0.1);
-  --radius-large: 24px;
-  --radius-medium: 18px;
+  --shadow-soft: 0 10px 24px rgba(18, 50, 74, 0.08);
+  --radius-large: 10px;
+  --radius-medium: 8px;
 }
 
 * {
@@ -57,7 +57,7 @@ button {
 input,
 textarea {
   width: 100%;
-  border-radius: 16px;
+  border-radius: 8px;
   border: 1px solid var(--color-border);
   background: rgba(255, 255, 255, 0.92);
   padding: 13px 14px;
@@ -89,7 +89,7 @@ legend {
 
 fieldset {
   border: 1px solid var(--color-border);
-  border-radius: 18px;
+  border-radius: 8px;
   padding: 16px;
   min-width: 0;
 }
@@ -115,10 +115,10 @@ th {
 
 .surface-card {
   background: var(--color-surface);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(18, 50, 74, 0.12);
   border-radius: var(--radius-large);
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(8px);
 }
 
 .page {
@@ -163,7 +163,7 @@ th {
 
 .metric-card {
   padding: 18px;
-  border-radius: 20px;
+  border-radius: 10px;
   background: rgba(248, 250, 252, 0.82);
   border: 1px solid rgba(10, 110, 209, 0.08);
 }
@@ -188,7 +188,7 @@ th {
   gap: 8px;
   min-height: 44px;
   border: none;
-  border-radius: 999px;
+  border-radius: 8px;
   background: linear-gradient(135deg, var(--color-brand), #4db1ff);
   color: white;
   padding: 0 18px;
@@ -226,7 +226,7 @@ th {
   align-items: center;
   min-height: 32px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 0.82rem;
   background: rgba(10, 110, 209, 0.08);
   color: var(--color-brand-strong);
@@ -269,7 +269,7 @@ th {
   gap: 10px;
   align-items: center;
   padding: 12px 14px;
-  border-radius: 16px;
+  border-radius: 8px;
   border: 1px solid rgba(10, 110, 209, 0.08);
   background: rgba(248, 250, 252, 0.85);
 }
@@ -280,7 +280,7 @@ th {
 }
 
 .notice {
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 12px 14px;
   background: rgba(10, 110, 209, 0.08);
   color: var(--color-brand-strong);

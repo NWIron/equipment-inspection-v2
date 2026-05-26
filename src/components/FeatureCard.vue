@@ -35,6 +35,7 @@ defineProps({
   gap: 18px;
   padding: 22px;
   min-height: 240px;
+  border-radius: 10px;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -73,7 +74,7 @@ defineProps({
 .feature-card__icon {
   width: 48px;
   height: 48px;
-  border-radius: 16px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   font-weight: 700;

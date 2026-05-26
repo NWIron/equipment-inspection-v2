@@ -178,7 +178,7 @@ function showSsoMessage() {
 
 .hero-stat {
   padding: 18px;
-  border-radius: 20px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid rgba(10, 110, 209, 0.08);
 }
@@ -236,7 +236,7 @@ function showSsoMessage() {
   align-items: center;
   width: 100%;
   border: 1px solid rgba(10, 110, 209, 0.08);
-  border-radius: 18px;
+  border-radius: 8px;
   padding: 14px 16px;
   background: rgba(248, 250, 252, 0.85);
   text-align: left;

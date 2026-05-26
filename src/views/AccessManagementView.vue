@@ -375,7 +375,7 @@ function removeRole(roleId) {
 .role-item {
   padding: 18px;
   border: 1px solid rgba(10, 110, 209, 0.08);
-  border-radius: 18px;
+  border-radius: 8px;
   background: rgba(248, 250, 252, 0.76);
 }
 
