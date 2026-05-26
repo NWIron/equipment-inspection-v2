@@ -1,17 +1,28 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
 
 const router = useRouter()
 const accessStore = useAccessStore()
+const isLoggingOut = ref(false)
 
 const currentRoleLabel = computed(() => accessStore.activeRoles.map((role) => role.name).join(' / '))
 
-function handleLogout() {
-  accessStore.logout()
-  router.push({ name: 'login' })
+async function handleLogout() {
+  if (isLoggingOut.value) {
+    return
+  }
+
+  isLoggingOut.value = true
+
+  try {
+    await accessStore.logout()
+    await router.push({ name: 'login' })
+  } finally {
+    isLoggingOut.value = false
+  }
 }
 </script>
 
@@ -31,7 +42,9 @@ function handleLogout() {
           <p class="user-name">{{ accessStore.activeUser?.name }}</p>
           <p class="user-role">{{ currentRoleLabel || '未分配角色' }}</p>
         </div>
-        <button class="button button-ghost" type="button" @click="handleLogout">退出登录</button>
+        <button class="button button-ghost" type="button" :disabled="isLoggingOut" @click="handleLogout">
+          {{ isLoggingOut ? '退出中...' : '退出登录' }}
+        </button>
       </div>
     </header>
 

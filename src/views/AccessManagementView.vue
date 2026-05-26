@@ -269,9 +269,8 @@ async function removeRole(roleId) {
                 <p>{{ role.description || '未填写角色说明。' }}</p>
               </div>
               <div class="action-row">
-                <span v-if="role.isSystem" class="status-pill">系统种子</span>
                 <button
-                  v-else
+                  v-if="!role.isSystem"
                   class="button button-danger"
                   type="button"
                   @click="removeRole(role.id)"
