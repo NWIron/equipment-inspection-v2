@@ -62,30 +62,12 @@ function showSsoMessage() {
 
 <template>
   <div class="login-page">
-    <section class="login-hero surface-card">
-      <p class="kicker">Enterprise Portal</p>
-      <h1>专业设备点检系统</h1>
-      <p class="hero-copy">
-        以角色驱动的企业门户聚合设备管理、点检任务、维修工单与权限治理，一期先完成统一入口、登录与授权骨架。
-      </p>
-
-      <div class="hero-grid">
-        <article class="hero-stat">
-          <span>平台定位</span>
-          <strong>Cloudflare Pages + D1</strong>
-        </article>
-        <article class="hero-stat">
-          <span>体验目标</span>
-          <strong>桌面端 / 移动端统一</strong>
-        </article>
-        <article class="hero-stat">
-          <span>一期交付</span>
-          <strong>登录 + 权限 + 门户</strong>
-        </article>
+    <section class="login-card">
+      <div class="login-brand">
+        <div class="login-brand__mark">EI</div>
+        <p class="login-brand__label">Equipment Inspection</p>
       </div>
-    </section>
 
-    <section class="login-card surface-card">
       <div class="page-intro">
         <p class="kicker">Sign In</p>
         <h2>登录系统</h2>
@@ -109,10 +91,10 @@ function showSsoMessage() {
 
         <div v-if="feedback" class="notice notice-error">{{ feedback }}</div>
 
-        <button class="button" type="submit" :disabled="isSubmitting">
+        <button class="button login-submit" type="submit" :disabled="isSubmitting">
           {{ isSubmitting ? '登录中...' : '邮箱登录' }}
         </button>
-        <button class="button button-secondary" type="button" @click="showSsoMessage">
+        <button class="button button-secondary login-sso" type="button" @click="showSsoMessage">
           Azure AD SSO（预留）
         </button>
 
@@ -145,81 +127,126 @@ function showSsoMessage() {
 <style scoped>
 .login-page {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(340px, 460px);
-  gap: 16px;
-  padding: 16px;
-}
-
-.login-hero,
-.login-card {
-  padding: 22px;
-}
-
-.login-hero {
-  display: grid;
-  align-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
   background:
-    linear-gradient(135deg, rgba(10, 110, 209, 0.08), rgba(0, 165, 138, 0.12)),
-    rgba(255, 255, 255, 0.92);
+    radial-gradient(circle at top, rgba(9, 105, 218, 0.08), transparent 32%),
+    linear-gradient(180deg, #f6f8fa 0%, #eef2f6 100%);
 }
 
-.page-intro h2,
-.login-hero h1 {
-  margin: 6px 0 10px;
-  font-size: clamp(1.6rem, 2.8vw, 2.6rem);
-  line-height: 1.05;
-  color: var(--color-text);
-}
-
-.page-intro p,
-.hero-copy {
-  margin: 0;
-  line-height: 1.55;
-  color: var(--color-text-soft);
-}
-
-.hero-grid {
+.login-card {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 18px;
+  width: min(420px, 100%);
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(31, 35, 40, 0.06);
+}
+
+.login-brand {
+  display: grid;
+  justify-items: center;
   gap: 10px;
 }
 
-.hero-stat {
-  padding: 14px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.74);
-  border: 1px solid rgba(10, 110, 209, 0.08);
-}
-
-.hero-stat span,
-.demo-header span {
-  display: block;
-  font-size: 0.78rem;
-  color: var(--color-text-soft);
-}
-
-.hero-stat strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 0.92rem;
-  color: var(--color-text);
-}
-
-.login-card {
+.login-brand__mark {
+  width: 44px;
+  height: 44px;
   display: grid;
-  gap: 16px;
-  align-content: start;
+  place-items: center;
+  border-radius: 10px;
+  background: #24292f;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.login-brand__label {
+  margin: 0;
+  color: #57606a;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.page-intro {
+  text-align: center;
+}
+
+.page-intro .kicker {
+  color: #57606a;
+}
+
+.page-intro h2 {
+  margin: 6px 0 10px;
+  font-size: 1.65rem;
+  line-height: 1.1;
+  color: #24292f;
+}
+
+.page-intro p {
+  margin: 0;
+  line-height: 1.55;
+  color: #57606a;
 }
 
 .login-form {
   display: grid;
-  gap: 12px;
+  gap: 14px;
+}
+
+.login-form label {
+  gap: 6px;
+}
+
+.login-form label span {
+  color: #24292f;
+  font-size: 0.86rem;
+}
+
+.login-form input {
+  border-radius: 8px;
+  border: 1px solid #d0d7de;
+  background: #ffffff;
+  color: #24292f;
+}
+
+.login-form input:focus {
+  border-color: #0969da;
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+}
+
+.login-submit {
+  background: #2da44e;
+  border: 1px solid #2a9147;
+  color: #ffffff;
+}
+
+.login-submit:hover {
+  background: #2c974b;
+  border-color: #2c974b;
+}
+
+.login-sso {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  color: #24292f;
+}
+
+.login-sso:hover {
+  background: #f3f4f6;
+  border-color: #c7d0d9;
 }
 
 .demo-section {
   display: grid;
   gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #d8dee4;
 }
 
 .demo-header {
@@ -231,6 +258,14 @@ function showSsoMessage() {
 
 .demo-header h3 {
   margin: 0;
+  font-size: 0.96rem;
+  color: #24292f;
+}
+
+.demo-header span {
+  display: block;
+  font-size: 0.78rem;
+  color: #57606a;
 }
 
 .demo-list {
@@ -244,52 +279,54 @@ function showSsoMessage() {
   gap: 10px;
   align-items: center;
   width: 100%;
-  border: 1px solid rgba(10, 110, 209, 0.08);
+  border: 1px solid #d0d7de;
   border-radius: 8px;
   padding: 10px 12px;
-  background: rgba(248, 250, 252, 0.85);
+  background: #ffffff;
   text-align: left;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.demo-chip:hover {
+  background: #f6f8fa;
+  border-color: #c7d0d9;
 }
 
 .demo-chip strong {
-  color: var(--color-text);
+  color: #24292f;
 }
 
 .demo-chip span {
-  color: var(--color-text-soft);
+  color: #57606a;
   font-size: 0.8rem;
 }
 
-@media (max-width: 920px) {
+.login-card .notice {
+  border: 1px solid #c7d0d9;
+  background: #f6f8fa;
+  color: #24292f;
+}
+
+.login-card .notice-error {
+  border-color: #f1b7b2;
+  background: #fff8f8;
+  color: #cf222e;
+}
+
+@media (max-width: 640px) {
   .login-page {
-    grid-template-columns: 1fr;
-    padding: 12px;
+    padding: 16px 12px;
   }
 
-  .login-hero,
   .login-card {
-    padding: 18px;
+    padding: 20px 18px;
   }
 
   .demo-chip {
     flex-direction: column;
     align-items: flex-start;
-  }
-}
-
-@media (max-width: 640px) {
-  .login-page {
-    gap: 12px;
-    padding: 10px;
-  }
-
-  .login-hero,
-  .login-card {
-    padding: 16px;
-  }
-
-  .hero-grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>

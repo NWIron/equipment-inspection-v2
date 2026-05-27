@@ -25,9 +25,10 @@ defineProps({
 .feature-card {
   display: grid;
   gap: 12px;
-  padding: 16px;
-  min-height: 168px;
-  border-radius: 10px;
+  padding: 18px;
+  min-height: 176px;
+  border-radius: 12px;
+  background: #ffffff;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -35,24 +36,25 @@ defineProps({
 }
 
 .feature-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 38px rgba(15, 55, 102, 0.16);
+  transform: translateY(-2px);
+  border-color: #afb8c1;
+  box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
 }
 
 .feature-card[data-accent='blue'] {
-  border-top: 4px solid #0a6ed1;
+  border-top: 3px solid #0969da;
 }
 
 .feature-card[data-accent='teal'] {
-  border-top: 4px solid #00a58a;
+  border-top: 3px solid #1f883d;
 }
 
 .feature-card[data-accent='amber'] {
-  border-top: 4px solid #d88400;
+  border-top: 3px solid #bf8700;
 }
 
 .feature-card[data-accent='slate'] {
-  border-top: 4px solid #4f6b8b;
+  border-top: 3px solid #6e7781;
 }
 
 .feature-card__category {
@@ -60,7 +62,7 @@ defineProps({
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-text-soft);
+  color: #57606a;
 }
 
 .feature-card__body h3 {
@@ -82,5 +84,7 @@ defineProps({
   font-weight: 600;
   font-size: 0.84rem;
   color: var(--color-brand);
+  padding-top: 12px;
+  border-top: 1px solid #d8dee4;
 }
 </style>

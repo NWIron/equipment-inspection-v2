@@ -57,7 +57,7 @@ async function handleLogout() {
 <style scoped>
 .app-shell {
   min-height: 100vh;
-  padding: 16px;
+  padding: 16px 18px 18px;
 }
 
 .shell-header {
@@ -66,6 +66,7 @@ async function handleLogout() {
   gap: 12px;
   align-items: center;
   padding: 14px 16px;
+  background: #ffffff;
 }
 
 .brand-block {
@@ -77,14 +78,14 @@ async function handleLogout() {
 .brand-mark {
   width: 44px;
   height: 44px;
-  border-radius: 8px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: white;
-  background: linear-gradient(145deg, #0a6ed1, #4db1ff);
-  box-shadow: 0 16px 32px rgba(10, 110, 209, 0.25);
+  background: #24292f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .shell-kicker,
@@ -99,6 +100,10 @@ async function handleLogout() {
   margin: 4px 0 0;
   font-size: 1.15rem;
   color: var(--color-text);
+}
+
+.button-ghost {
+  min-width: 88px;
 }
 
 .user-panel {

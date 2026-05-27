@@ -1,23 +1,23 @@
 :root {
   font-family: 'Aptos', 'Segoe UI Variable', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
   font-size: 14px;
-  color: #12324a;
-  background: #f3f7fb;
+  color: #1f2328;
+  background: #f6f8fa;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --color-brand: #0a6ed1;
-  --color-brand-strong: #0854a0;
-  --color-accent: #00a58a;
-  --color-text: #12324a;
-  --color-text-soft: #567189;
-  --color-border: rgba(18, 50, 74, 0.16);
-  --color-surface: rgba(255, 255, 255, 0.88);
-  --color-danger: #c0392b;
-  --color-success: #11865b;
-  --shadow-soft: 0 10px 24px rgba(18, 50, 74, 0.08);
-  --radius-large: 10px;
+  --color-brand: #0969da;
+  --color-brand-strong: #0550ae;
+  --color-accent: #2da44e;
+  --color-text: #1f2328;
+  --color-text-soft: #57606a;
+  --color-border: #d0d7de;
+  --color-surface: #ffffff;
+  --color-danger: #cf222e;
+  --color-success: #1a7f37;
+  --shadow-soft: 0 1px 0 rgba(27, 31, 36, 0.04), 0 8px 24px rgba(140, 149, 159, 0.2);
+  --radius-large: 12px;
   --radius-medium: 8px;
 }
 
@@ -33,10 +33,7 @@ body,
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, rgba(77, 177, 255, 0.2), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(0, 165, 138, 0.12), transparent 24%),
-    linear-gradient(180deg, #f7fbff 0%, #eef4fa 100%);
+  background: linear-gradient(180deg, #f6f8fa 0%, #eef2f6 100%);
   color: var(--color-text);
 }
 
@@ -58,9 +55,9 @@ button {
 input,
 textarea {
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-medium);
   border: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.92);
+  background: #ffffff;
   padding: 10px 12px;
   color: var(--color-text);
   transition:
@@ -71,8 +68,8 @@ textarea {
 input:focus,
 textarea:focus {
   outline: none;
-  border-color: rgba(10, 110, 209, 0.45);
-  box-shadow: 0 0 0 4px rgba(10, 110, 209, 0.1);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
 }
 
 label,
@@ -90,9 +87,10 @@ legend {
 
 fieldset {
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-medium);
   padding: 12px;
   min-width: 0;
+  background: #f6f8fa;
 }
 
 table {
@@ -104,7 +102,7 @@ th,
 td {
   padding: 10px 8px;
   text-align: left;
-  border-bottom: 1px solid rgba(18, 50, 74, 0.08);
+  border-bottom: 1px solid #d8dee4;
   vertical-align: top;
 }
 
@@ -116,10 +114,9 @@ th {
 
 .surface-card {
   background: var(--color-surface);
-  border: 1px solid rgba(18, 50, 74, 0.12);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(8px);
 }
 
 .page {
@@ -153,7 +150,7 @@ th {
   font-size: 0.74rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-brand);
+  color: var(--color-text-soft);
 }
 
 .metric-grid {
@@ -164,9 +161,9 @@ th {
 
 .metric-card {
   padding: 18px;
-  border-radius: 10px;
-  background: rgba(248, 250, 252, 0.82);
-  border: 1px solid rgba(10, 110, 209, 0.08);
+  border-radius: var(--radius-medium);
+  background: #f6f8fa;
+  border: 1px solid var(--color-border);
 }
 
 .metric-label {
@@ -188,30 +185,55 @@ th {
   justify-content: center;
   gap: 8px;
   min-height: 38px;
-  border: none;
+  border: 1px solid rgba(27, 31, 36, 0.15);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--color-brand), #4db1ff);
-  color: white;
+  background: #f6f8fa;
+  box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04);
+  color: var(--color-text);
   padding: 0 14px;
   font-weight: 600;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .button:hover {
-  filter: brightness(1.02);
+  background: #f3f4f6;
+  border-color: rgba(27, 31, 36, 0.22);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.button-primary,
+.button-success {
+  border-color: rgba(27, 31, 36, 0.15);
+  background: var(--color-accent);
+  color: white;
+}
+
+.button-primary:hover,
+.button-success:hover {
+  background: #2c974b;
+  border-color: rgba(27, 31, 36, 0.15);
 }
 
 .button-secondary {
-  background: linear-gradient(135deg, #eef4fb, #dfeaf8);
-  color: var(--color-brand-strong);
+  background: #ffffff;
+  color: var(--color-text);
 }
 
 .button-ghost {
-  background: rgba(10, 110, 209, 0.08);
-  color: var(--color-brand-strong);
+  background: #ffffff;
+  color: var(--color-text);
 }
 
 .button-danger {
-  background: rgba(192, 57, 43, 0.08);
+  background: #fff8f8;
+  border-color: rgba(207, 34, 46, 0.18);
   color: var(--color-danger);
 }
 
@@ -227,19 +249,22 @@ th {
   align-items: center;
   min-height: 26px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: 999px;
   font-size: 0.76rem;
-  background: rgba(10, 110, 209, 0.08);
-  color: var(--color-brand-strong);
+  background: #f6f8fa;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-soft);
 }
 
 .status-success {
-  background: rgba(17, 134, 91, 0.12);
+  background: #dafbe1;
+  border-color: #b7ebc6;
   color: var(--color-success);
 }
 
 .status-danger {
-  background: rgba(192, 57, 43, 0.12);
+  background: #ffebe9;
+  border-color: #ffcecb;
   color: var(--color-danger);
 }
 
@@ -270,9 +295,9 @@ th {
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(10, 110, 209, 0.08);
-  background: rgba(248, 250, 252, 0.85);
+  border-radius: var(--radius-medium);
+  border: 1px solid var(--color-border);
+  background: #ffffff;
 }
 
 .choice-chip input {
@@ -281,19 +306,22 @@ th {
 }
 
 .notice {
-  border-radius: 8px;
+  border-radius: var(--radius-medium);
   padding: 10px 12px;
-  background: rgba(10, 110, 209, 0.08);
-  color: var(--color-brand-strong);
+  background: #f6f8fa;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .notice-success {
-  background: rgba(17, 134, 91, 0.12);
+  background: #dafbe1;
+  border-color: #b7ebc6;
   color: var(--color-success);
 }
 
 .notice-error {
-  background: rgba(192, 57, 43, 0.12);
+  background: #ffebe9;
+  border-color: #ffcecb;
   color: var(--color-danger);
 }
 

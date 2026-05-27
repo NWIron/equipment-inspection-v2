@@ -58,5 +58,6 @@ const relatedRoles = computed(() =>
   display: grid;
   gap: 24px;
   padding: 28px;
+  background: #ffffff;
 }
 </style>

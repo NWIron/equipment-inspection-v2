@@ -191,7 +191,7 @@ async function removeRole(roleId) {
           </div>
           <div class="action-row">
             <span class="status-pill">{{ users.length }} 个账号</span>
-            <button class="button" type="button" @click="openUserModal">创建用户</button>
+            <button class="button button-success" type="button" @click="openUserModal">创建用户</button>
           </div>
         </div>
 
@@ -252,7 +252,7 @@ async function removeRole(roleId) {
           </div>
           <div class="action-row">
             <span class="status-pill">系统角色不可删除</span>
-            <button class="button" type="button" @click="openRoleModal">创建角色</button>
+            <button class="button button-success" type="button" @click="openRoleModal">创建角色</button>
           </div>
         </div>
 
@@ -346,7 +346,7 @@ async function removeRole(roleId) {
 
           <div class="modal-actions">
             <button class="button button-ghost" type="button" @click="closeUserModal">取消</button>
-            <button class="button" type="submit" :disabled="isSavingUser">{{ userSubmitLabel }}</button>
+            <button class="button button-success" type="submit" :disabled="isSavingUser">{{ userSubmitLabel }}</button>
           </div>
         </form>
       </section>
@@ -393,7 +393,7 @@ async function removeRole(roleId) {
 
           <div class="modal-actions">
             <button class="button button-ghost" type="button" @click="closeRoleModal">取消</button>
-            <button class="button" type="submit" :disabled="isSavingRole">
+            <button class="button button-success" type="submit" :disabled="isSavingRole">
               {{ isSavingRole ? '创建中...' : '创建角色' }}
             </button>
           </div>
@@ -416,13 +416,14 @@ async function removeRole(roleId) {
 .tab-card {
   display: grid;
   gap: 14px;
+  padding: 18px;
 }
 
 .tab-bar {
   display: flex;
   gap: 20px;
   padding-bottom: 2px;
-  border-bottom: 1px solid rgba(18, 50, 74, 0.08);
+  border-bottom: 1px solid #d8dee4;
 }
 
 .tab-button {
@@ -494,9 +495,14 @@ async function removeRole(roleId) {
 .user-item,
 .role-item {
   padding: 14px;
-  border: 1px solid rgba(10, 110, 209, 0.08);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: rgba(248, 250, 252, 0.76);
+  background: #ffffff;
+}
+
+.user-item:hover,
+.role-item:hover {
+  border-color: #afb8c1;
 }
 
 .user-item__header,
@@ -578,7 +584,7 @@ async function removeRole(roleId) {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(18, 50, 74, 0.28);
+  background: rgba(31, 35, 40, 0.28);
 }
 
 .modal-card {
@@ -586,6 +592,7 @@ async function removeRole(roleId) {
   max-height: min(88vh, 860px);
   overflow: auto;
   padding: 18px;
+  background: #ffffff;
 }
 
 .modal-headline {
