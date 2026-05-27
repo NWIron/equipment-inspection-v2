@@ -157,11 +157,6 @@ async function removeRole(roleId) {
           维护用户主数据与角色，功能卡片权限按角色聚合，一个用户可分配多个角色。
         </p>
       </div>
-      <div class="tag-row">
-        <span class="tag">用户主数据</span>
-        <span class="tag">角色管理</span>
-        <span class="tag">卡片授权</span>
-      </div>
     </div>
 
     <section class="surface-card section-card tab-card">
@@ -212,9 +207,6 @@ async function removeRole(roleId) {
                 <p>{{ user.accountName }} · {{ user.email }}</p>
               </div>
               <div class="action-row">
-                <span class="status-pill" :class="user.disabled ? 'status-danger' : 'status-success'">
-                  {{ user.disabled ? '禁用' : '启用' }}
-                </span>
                 <button class="button button-ghost" type="button" @click="openUserEditModal(user)">
                   编辑
                 </button>
@@ -228,6 +220,13 @@ async function removeRole(roleId) {
             </div>
 
             <div class="user-item__meta">
+              <div class="user-meta-block">
+                <span class="user-meta-label">用户状态</span>
+                <strong class="user-status" :class="user.disabled ? 'is-disabled' : 'is-enabled'">
+                  <span class="user-status__dot"></span>
+                  {{ user.disabled ? '已禁用' : '已启用' }}
+                </strong>
+              </div>
               <div class="user-meta-block">
                 <span class="user-meta-label">手机号</span>
                 <strong>{{ user.phone }}</strong>
@@ -420,33 +419,44 @@ async function removeRole(roleId) {
 }
 
 .tab-bar {
-  display: inline-grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding: 4px;
-  border-radius: 10px;
-  background: rgba(18, 50, 74, 0.05);
+  display: flex;
+  gap: 20px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(18, 50, 74, 0.08);
 }
 
 .tab-button {
-  min-height: 34px;
-  padding: 0 14px;
+  position: relative;
+  min-height: 36px;
+  padding: 0 2px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--color-text-soft);
   font-weight: 600;
   transition:
-    background 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease;
 }
 
 .tab-button.is-active {
-  border-color: rgba(10, 110, 209, 0.1);
-  background: rgba(255, 255, 255, 0.92);
+  border-color: transparent;
   color: var(--color-text);
-  box-shadow: 0 6px 16px rgba(18, 50, 74, 0.08);
+}
+
+.tab-button::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.tab-button.is-active::after {
+  background: var(--color-brand);
 }
 
 .tab-panel {
@@ -527,6 +537,28 @@ async function removeRole(roleId) {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-soft);
+}
+
+.user-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.user-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.user-status.is-enabled {
+  color: var(--color-success);
+}
+
+.user-status.is-disabled {
+  color: var(--color-danger);
 }
 
 .compact-tags {
