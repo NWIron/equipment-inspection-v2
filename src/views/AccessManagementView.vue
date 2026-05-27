@@ -571,6 +571,14 @@ async function removeRole(roleId) {
   gap: 8px;
 }
 
+.user-list .tag {
+  border-radius: 8px;
+}
+
+.role-list .tag {
+  border-radius: 8px;
+}
+
 .action-row {
   display: flex;
   flex-wrap: wrap;
