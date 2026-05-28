@@ -3,11 +3,11 @@ import { onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
+import { useMessageToastStore } from '../stores/messageToast'
 
 const route = useRoute()
 const inspectionTaskStore = useInspectionTaskStore()
-const feedbackMessage = ref('')
-const feedbackType = ref('success')
+const toastStore = useMessageToastStore()
 const isSaving = ref(false)
 const isCompleting = ref(false)
 
@@ -26,8 +26,7 @@ function getTaskStatusClass(status) {
 }
 
 function setFeedback(message, type = 'success') {
-  feedbackMessage.value = message
-  feedbackType.value = type
+  toastStore.show(message, type)
 }
 
 function applyTask(task) {
@@ -38,7 +37,6 @@ function applyTask(task) {
     code: item.code,
     description: item.description,
     resultStatus: item.resultStatus,
-    remark: item.remark,
   }))
 }
 
@@ -104,12 +102,8 @@ onMounted(loadTask)
       <RouterLink class="button button-ghost" :to="{ name: 'inspection-task-management' }">返回任务清单</RouterLink>
     </div>
 
-    <div v-if="feedbackMessage" class="notice" :class="`notice-${feedbackType}`">
-      {{ feedbackMessage }}
-    </div>
-
     <div v-if="inspectionTaskStore.isLoadingTask" class="notice">正在加载任务详情...</div>
-    <div v-else-if="!inspectionTaskStore.activeTask" class="notice notice-error">未找到点检任务。</div>
+    <div v-else-if="!inspectionTaskStore.activeTask" class="empty-state">未找到点检任务。</div>
 
     <template v-else>
       <section class="surface-card section-card">
@@ -162,10 +156,6 @@ onMounted(loadTask)
               {{ inspectionTaskStore.activeTask.status }}
             </strong>
           </div>
-          <div class="entity-meta-block">
-            <span class="entity-meta-label">故障信息</span>
-            <strong>{{ inspectionTaskStore.activeTask.faultCode?.code || '无' }}</strong>
-          </div>
         </div>
       </section>
 
@@ -202,6 +192,14 @@ onMounted(loadTask)
               </label>
             </div>
           </article>
+        </div>
+
+        <div class="fault-info-field">
+          <span>故障信息</span>
+          <div class="fault-info-field__content">
+            <strong class="fault-info-field__code">{{ inspectionTaskStore.activeTask.faultCode?.code || '无' }}</strong>
+            <p>{{ inspectionTaskStore.activeTask.faultCode?.description || '当前任务未配置故障代码。' }}</p>
+          </div>
         </div>
 
         <label class="fault-note-field">
@@ -320,6 +318,44 @@ onMounted(loadTask)
 .fault-note-field {
   display: grid;
   gap: 8px;
+}
+
+.fault-info-field {
+  display: grid;
+  gap: 6px;
+}
+
+.fault-info-field__content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.fault-info-field > span {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.fault-info-field__code {
+  font-size: 0.94rem;
+}
+
+.fault-info-field p {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.82rem;
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-soft);
+  background: #f6f8fa;
 }
 
 select {

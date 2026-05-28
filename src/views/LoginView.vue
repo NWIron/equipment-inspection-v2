@@ -1,20 +1,20 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
+import { useMessageToastStore } from '../stores/messageToast'
 
 const route = useRoute()
 const router = useRouter()
 const accessStore = useAccessStore()
+const toastStore = useMessageToastStore()
 
 const loginForm = reactive({
   email: 'admin@mettlertoledo.com',
   password: 'Pass@123',
 })
 
-const feedback = ref('')
-const ssoMessage = ref('')
 const isSubmitting = ref(false)
 
 const demoAccounts = [
@@ -38,7 +38,6 @@ const demoAccounts = [
 function useDemoAccount(account) {
   loginForm.email = account.email
   loginForm.password = account.password
-  feedback.value = ''
 }
 
 async function submitLogin() {
@@ -47,7 +46,7 @@ async function submitLogin() {
   isSubmitting.value = false
 
   if (!result.ok) {
-    feedback.value = result.message
+    toastStore.show(result.message, 'error')
     return
   }
 
@@ -56,8 +55,14 @@ async function submitLogin() {
 }
 
 function showSsoMessage() {
-  ssoMessage.value = 'Azure AD SSO 已预留入口，一期暂未接入。'
+  toastStore.show('Azure AD SSO 已预留入口，一期暂未接入。', 'info')
 }
+
+onMounted(() => {
+  if (accessStore.initializeError) {
+    toastStore.show(accessStore.initializeError, 'error')
+  }
+})
 </script>
 
 <template>
@@ -75,10 +80,6 @@ function showSsoMessage() {
       </div>
 
       <form class="login-form" @submit.prevent="submitLogin">
-        <div v-if="accessStore.initializeError" class="notice notice-error">
-          {{ accessStore.initializeError }}
-        </div>
-
         <label>
           <span>邮箱</span>
           <input v-model="loginForm.email" type="email" placeholder="name@example.com" />
@@ -89,16 +90,12 @@ function showSsoMessage() {
           <input v-model="loginForm.password" type="password" placeholder="请输入密码" />
         </label>
 
-        <div v-if="feedback" class="notice notice-error">{{ feedback }}</div>
-
         <button class="button login-submit" type="submit" :disabled="isSubmitting">
           {{ isSubmitting ? '登录中...' : '邮箱登录' }}
         </button>
         <button class="button button-secondary login-sso" type="button" @click="showSsoMessage">
           Azure AD SSO（预留）
         </button>
-
-        <div v-if="ssoMessage" class="notice">{{ ssoMessage }}</div>
       </form>
 
       <div class="demo-section">
@@ -301,18 +298,6 @@ function showSsoMessage() {
 .demo-chip span {
   color: #57606a;
   font-size: 0.8rem;
-}
-
-.login-card .notice {
-  border: 1px solid #c7d0d9;
-  background: #f6f8fa;
-  color: #24292f;
-}
-
-.login-card .notice-error {
-  border-color: #f1b7b2;
-  background: #fff8f8;
-  color: #cf222e;
 }
 
 @media (max-width: 640px) {

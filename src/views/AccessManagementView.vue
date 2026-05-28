@@ -3,8 +3,10 @@ import { computed, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
+import { useMessageToastStore } from '../stores/messageToast'
 
 const accessStore = useAccessStore()
+const toastStore = useMessageToastStore()
 const activeTab = ref('users')
 const isUserModalOpen = ref(false)
 const isRoleModalOpen = ref(false)
@@ -25,10 +27,6 @@ const roleForm = reactive({
   featureIds: [],
 })
 
-const userFeedback = ref('')
-const userFeedbackType = ref('success')
-const roleFeedback = ref('')
-const roleFeedbackType = ref('success')
 const isSavingUser = ref(false)
 const isSavingRole = ref(false)
 
@@ -45,7 +43,6 @@ const userSubmitLabel = computed(() => {
 })
 
 function openUserModal() {
-  userFeedback.value = ''
   editingUserId.value = ''
   isUserModalOpen.value = true
 }
@@ -58,7 +55,6 @@ function openUserEditModal(user) {
   userForm.phone = user.phone
   userForm.password = ''
   userForm.roleIds = [...user.roleIds]
-  userFeedback.value = ''
   isUserModalOpen.value = true
 }
 
@@ -66,18 +62,15 @@ function closeUserModal() {
   isUserModalOpen.value = false
   editingUserId.value = ''
   resetUserForm()
-  userFeedback.value = ''
 }
 
 function openRoleModal() {
-  roleFeedback.value = ''
   isRoleModalOpen.value = true
 }
 
 function closeRoleModal() {
   isRoleModalOpen.value = false
   resetRoleForm()
-  roleFeedback.value = ''
 }
 
 function resetUserForm() {
@@ -96,13 +89,11 @@ function resetRoleForm() {
 }
 
 function setUserFeedback(result) {
-  userFeedback.value = result.message
-  userFeedbackType.value = result.ok ? 'success' : 'error'
+  toastStore.show(result.message, result.ok ? 'success' : 'error')
 }
 
 function setRoleFeedback(result) {
-  roleFeedback.value = result.message
-  roleFeedbackType.value = result.ok ? 'success' : 'error'
+  toastStore.show(result.message, result.ok ? 'success' : 'error')
 }
 
 async function submitUser() {
@@ -204,10 +195,6 @@ async function removeRole(roleId) {
           </div>
         </div>
 
-        <div v-if="userFeedback" class="notice" :class="`notice-${userFeedbackType}`">
-          {{ userFeedback }}
-        </div>
-
         <div class="user-list">
           <article v-for="user in users" :key="user.id" class="user-item">
             <div class="user-item__header">
@@ -264,10 +251,6 @@ async function removeRole(roleId) {
           </div>
         </div>
 
-        <div v-if="roleFeedback" class="notice" :class="`notice-${roleFeedbackType}`">
-          {{ roleFeedback }}
-        </div>
-
         <div class="role-list">
           <article v-for="role in roles" :key="role.id" class="role-item">
             <div class="role-item__header">
@@ -315,10 +298,6 @@ async function removeRole(roleId) {
               />
             </svg>
           </button>
-        </div>
-
-        <div v-if="userFeedback" class="notice" :class="`notice-${userFeedbackType}`">
-          {{ userFeedback }}
         </div>
 
         <form class="form-grid" @submit.prevent="submitUser">
@@ -388,10 +367,6 @@ async function removeRole(roleId) {
               />
             </svg>
           </button>
-        </div>
-
-        <div v-if="roleFeedback" class="notice" :class="`notice-${roleFeedbackType}`">
-          {{ roleFeedback }}
         </div>
 
         <form class="form-grid" @submit.prevent="submitRole">

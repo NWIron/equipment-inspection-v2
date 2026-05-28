@@ -3,13 +3,13 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useEquipmentStore } from '../stores/equipment'
+import { useMessageToastStore } from '../stores/messageToast'
 
 const STATUS_OPTIONS = ['在用', '停用', '检修中', '待报废']
 
 const equipmentStore = useEquipmentStore()
+const toastStore = useMessageToastStore()
 const activeTab = ref('equipment')
-const feedbackMessage = ref('')
-const feedbackType = ref('success')
 const isEquipmentModalOpen = ref(false)
 const isTaskListModalOpen = ref(false)
 const isInspectionItemModalOpen = ref(false)
@@ -79,12 +79,10 @@ const faultCodeEditorTitle = computed(() => (editingFaultCodeId.value ? '编辑�
 const sparePartEditorTitle = computed(() => (editingSparePartId.value ? '编辑备件' : '创建备件'))
 
 function setFeedback(message, type = 'success') {
-  feedbackMessage.value = message
-  feedbackType.value = type
+  toastStore.show(message, type)
 }
 
 function clearFeedback() {
-  feedbackMessage.value = ''
 }
 
 function openEquipmentModal() {
@@ -447,14 +445,7 @@ onMounted(async () => {
         </button>
       </div>
 
-      <div v-if="feedbackMessage" class="notice" :class="`notice-${feedbackType}`">
-        {{ feedbackMessage }}
-      </div>
-
       <div v-if="equipmentStore.isInitializing" class="notice">正在加载设备管理主数据...</div>
-      <div v-if="equipmentStore.initializeError" class="notice notice-error">
-        {{ equipmentStore.initializeError }}
-      </div>
 
       <div v-if="activeTab === 'equipment'" class="tab-panel">
         <div class="list-panel">

@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
+import { useMessageToastStore } from '../stores/messageToast'
 
 function createDefaultTaskTime() {
   const now = new Date()
@@ -30,8 +31,7 @@ function toDateTimeInput(value) {
 }
 
 const inspectionTaskStore = useInspectionTaskStore()
-const feedbackMessage = ref('')
-const feedbackType = ref('success')
+const toastStore = useMessageToastStore()
 const isTaskModalOpen = ref(false)
 const editingTaskId = ref('')
 const isSubmitting = ref(false)
@@ -65,12 +65,10 @@ function getTaskStatusClass(status) {
 }
 
 function setFeedback(message, type = 'success') {
-  feedbackMessage.value = message
-  feedbackType.value = type
+  toastStore.show(message, type)
 }
 
 function clearFeedback() {
-  feedbackMessage.value = ''
 }
 
 function resetTaskForm() {
@@ -172,14 +170,7 @@ onMounted(async () => {
         <button class="button button-success" type="button" @click="openTaskModal">创建点检任务</button>
       </div>
 
-      <div v-if="feedbackMessage" class="notice" :class="`notice-${feedbackType}`">
-        {{ feedbackMessage }}
-      </div>
-
       <div v-if="inspectionTaskStore.isInitializing" class="notice">正在加载点检任务主数据...</div>
-      <div v-if="inspectionTaskStore.initializeError" class="notice notice-error">
-        {{ inspectionTaskStore.initializeError }}
-      </div>
 
       <div v-if="!taskDirectory.length" class="empty-state">当前还没有点检任务。</div>
 
