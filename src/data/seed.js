@@ -16,7 +16,7 @@ export const FEATURE_CATALOG = [
     category: 'Inspection',
     shortLabel: 'IT',
     accent: 'blue',
-    phaseLabel: '待细化',
+    phaseLabel: '一期开发中',
     path: '/modules/inspection-tasks',
   },
   {

@@ -34,6 +34,19 @@ const router = createRouter({
           meta: { featureId: 'equipment' },
         },
         {
+          path: 'modules/inspection-tasks',
+          name: 'inspection-task-management',
+          component: () => import('../views/InspectionTasksView.vue'),
+          meta: { featureId: 'inspection-tasks' },
+        },
+        {
+          path: 'modules/inspection-tasks/:taskId',
+          name: 'inspection-task-execution',
+          component: () => import('../views/InspectionTaskExecutionView.vue'),
+          props: true,
+          meta: { featureId: 'inspection-tasks' },
+        },
+        {
           path: 'modules/:moduleId',
           name: 'module-placeholder',
           component: () => import('../views/ModulePlaceholderView.vue'),

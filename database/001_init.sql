@@ -141,6 +141,35 @@ CREATE TABLE IF NOT EXISTS equipment_spare_parts (
   FOREIGN KEY (spare_part_id) REFERENCES spare_parts(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS inspection_tasks (
+  id TEXT PRIMARY KEY,
+  task_name TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  equipment_id TEXT NOT NULL,
+  inspector_user_id TEXT NOT NULL,
+  fault_code_id TEXT,
+  fault_note TEXT DEFAULT '',
+  priority TEXT NOT NULL DEFAULT '中',
+  status TEXT NOT NULL DEFAULT '待执行',
+  completed_at TEXT,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (equipment_id) REFERENCES equipment_assets(id) ON DELETE CASCADE,
+  FOREIGN KEY (inspector_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  FOREIGN KEY (fault_code_id) REFERENCES fault_codes(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS inspection_task_results (
+  task_id TEXT NOT NULL,
+  inspection_item_id TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  result_status TEXT NOT NULL DEFAULT '待检',
+  remark TEXT DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (task_id, inspection_item_id),
+  FOREIGN KEY (task_id) REFERENCES inspection_tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY (inspection_item_id) REFERENCES inspection_items(id) ON DELETE RESTRICT
+);
+
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role_id ON user_roles(role_id);
@@ -149,6 +178,9 @@ CREATE INDEX IF NOT EXISTS idx_task_list_items_inspection_item_id ON task_list_i
 CREATE INDEX IF NOT EXISTS idx_equipment_assets_owner_user_id ON equipment_assets(owner_user_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_task_lists_task_list_id ON equipment_task_lists(task_list_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_spare_parts_spare_part_id ON equipment_spare_parts(spare_part_id);
+CREATE INDEX IF NOT EXISTS idx_inspection_tasks_equipment_id ON inspection_tasks(equipment_id);
+CREATE INDEX IF NOT EXISTS idx_inspection_tasks_inspector_user_id ON inspection_tasks(inspector_user_id);
+CREATE INDEX IF NOT EXISTS idx_inspection_tasks_status ON inspection_tasks(status);
 
 INSERT OR REPLACE INTO features (id, title, summary, category, path, sort_order)
 VALUES
@@ -312,3 +344,40 @@ VALUES
   ('equipment-balance-001', 'spare-sensor-head'),
   ('equipment-line-oven-002', 'spare-filter-kit'),
   ('equipment-line-oven-002', 'spare-fuse-pack');
+
+INSERT OR REPLACE INTO inspection_tasks (
+  id,
+  task_name,
+  created_at,
+  equipment_id,
+  inspector_user_id,
+  fault_code_id,
+  fault_note,
+  priority,
+  status,
+  completed_at
+)
+VALUES
+  (
+    'inspection-task-balance-daily',
+    '电子天平日常点检',
+    '2026-05-28T09:00',
+    'equipment-balance-001',
+    'user-inspector',
+    NULL,
+    '',
+    '中',
+    '待执行',
+    NULL
+  );
+
+INSERT OR REPLACE INTO inspection_task_results (
+  task_id,
+  inspection_item_id,
+  sort_order,
+  result_status,
+  remark
+)
+VALUES
+  ('inspection-task-balance-daily', 'item-appearance', 10, '待检', ''),
+  ('inspection-task-balance-daily', 'item-safety', 20, '待检', '');
