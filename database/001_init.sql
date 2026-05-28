@@ -59,10 +59,88 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS inspection_items (
+  id TEXT PRIMARY KEY,
+  item_code TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS task_lists (
+  id TEXT PRIMARY KEY,
+  task_list_code TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS task_list_items (
+  task_list_id TEXT NOT NULL,
+  inspection_item_id TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (task_list_id, inspection_item_id),
+  FOREIGN KEY (task_list_id) REFERENCES task_lists(id) ON DELETE CASCADE,
+  FOREIGN KEY (inspection_item_id) REFERENCES inspection_items(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS spare_parts (
+  id TEXT PRIMARY KEY,
+  part_number TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  unit TEXT NOT NULL DEFAULT '件',
+  stock_quantity INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS equipment_assets (
+  id TEXT PRIMARY KEY,
+  equipment_code TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  status TEXT NOT NULL,
+  valid_until TEXT,
+  type TEXT,
+  model TEXT,
+  location TEXT,
+  owner_user_id TEXT,
+  contact_info TEXT,
+  purchase_date TEXT,
+  commissioning_date TEXT,
+  service_life TEXT,
+  inspection_frequency_days INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS equipment_task_lists (
+  equipment_id TEXT NOT NULL,
+  task_list_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (equipment_id, task_list_id),
+  FOREIGN KEY (equipment_id) REFERENCES equipment_assets(id) ON DELETE CASCADE,
+  FOREIGN KEY (task_list_id) REFERENCES task_lists(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS equipment_spare_parts (
+  equipment_id TEXT NOT NULL,
+  spare_part_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (equipment_id, spare_part_id),
+  FOREIGN KEY (equipment_id) REFERENCES equipment_assets(id) ON DELETE CASCADE,
+  FOREIGN KEY (spare_part_id) REFERENCES spare_parts(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role_id ON user_roles(role_id);
 CREATE INDEX IF NOT EXISTS idx_role_features_feature_id ON role_features(feature_id);
+CREATE INDEX IF NOT EXISTS idx_task_list_items_inspection_item_id ON task_list_items(inspection_item_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_assets_owner_user_id ON equipment_assets(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_task_lists_task_list_id ON equipment_task_lists(task_list_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_spare_parts_spare_part_id ON equipment_spare_parts(spare_part_id);
 
 INSERT OR REPLACE INTO features (id, title, summary, category, path, sort_order)
 VALUES
@@ -134,3 +212,89 @@ VALUES
   ('user-admin', 'role-administrator'),
   ('user-inspector', 'role-inspector'),
   ('user-engineer', 'role-equipment-engineer');
+
+INSERT OR REPLACE INTO inspection_items (id, item_code, description)
+VALUES
+  ('item-appearance', 'ITEM-001', '检查设备外观、铭牌和紧固状态。'),
+  ('item-lubrication', 'ITEM-002', '确认润滑点状态和润滑记录是否正常。'),
+  ('item-safety', 'ITEM-003', '检查急停、防护和安全联锁是否有效。');
+
+INSERT OR REPLACE INTO task_lists (id, task_list_code, description)
+VALUES
+  ('task-daily-balance', 'TASK-001', '电子天平日常点检清单'),
+  ('task-weekly-line', 'TASK-002', '产线关键设备周点检清单');
+
+INSERT OR REPLACE INTO task_list_items (task_list_id, inspection_item_id, sort_order)
+VALUES
+  ('task-daily-balance', 'item-appearance', 10),
+  ('task-daily-balance', 'item-safety', 20),
+  ('task-weekly-line', 'item-appearance', 10),
+  ('task-weekly-line', 'item-lubrication', 20),
+  ('task-weekly-line', 'item-safety', 30);
+
+INSERT OR REPLACE INTO spare_parts (id, part_number, description, unit, stock_quantity)
+VALUES
+  ('spare-filter-kit', 'SP-001', '过滤组件维护包', '套', 12),
+  ('spare-sensor-head', 'SP-002', '传感器探头总成', '个', 4),
+  ('spare-fuse-pack', 'SP-003', '保险丝套装', '盒', 18);
+
+INSERT OR REPLACE INTO equipment_assets (
+  id,
+  equipment_code,
+  description,
+  status,
+  valid_until,
+  type,
+  model,
+  location,
+  owner_user_id,
+  contact_info,
+  purchase_date,
+  commissioning_date,
+  service_life,
+  inspection_frequency_days
+)
+VALUES
+  (
+    'equipment-balance-001',
+    'EQ-001',
+    '实验室精密电子天平',
+    '在用',
+    '2027-12-31',
+    '称量设备',
+    'XPR205',
+    '上海工厂-实验室A区',
+    'user-engineer',
+    '张工程师 / 13800000003',
+    '2023-02-15',
+    '2023-03-01',
+    '10年',
+    7
+  ),
+  (
+    'equipment-line-oven-002',
+    'EQ-002',
+    '产线固化炉',
+    '检修中',
+    '2026-10-31',
+    '热处理设备',
+    'HT-480',
+    '苏州工厂-产线2',
+    'user-engineer',
+    '设备工程组 / 13800000003',
+    '2021-08-20',
+    '2021-09-01',
+    '12年',
+    14
+  );
+
+INSERT OR REPLACE INTO equipment_task_lists (equipment_id, task_list_id)
+VALUES
+  ('equipment-balance-001', 'task-daily-balance'),
+  ('equipment-line-oven-002', 'task-weekly-line');
+
+INSERT OR REPLACE INTO equipment_spare_parts (equipment_id, spare_part_id)
+VALUES
+  ('equipment-balance-001', 'spare-sensor-head'),
+  ('equipment-line-oven-002', 'spare-filter-kit'),
+  ('equipment-line-oven-002', 'spare-fuse-pack');

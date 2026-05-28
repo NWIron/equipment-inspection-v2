@@ -6,7 +6,7 @@ export const FEATURE_CATALOG = [
     category: 'Asset',
     shortLabel: 'EM',
     accent: 'teal',
-    phaseLabel: '待细化',
+    phaseLabel: '一期开发中',
     path: '/modules/equipment',
   },
   {

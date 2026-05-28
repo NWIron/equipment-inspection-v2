@@ -28,6 +28,12 @@ const router = createRouter({
           meta: { featureId: 'access-management' },
         },
         {
+          path: 'modules/equipment',
+          name: 'equipment-management',
+          component: () => import('../views/EquipmentManagementView.vue'),
+          meta: { featureId: 'equipment' },
+        },
+        {
           path: 'modules/:moduleId',
           name: 'module-placeholder',
           component: () => import('../views/ModulePlaceholderView.vue'),
