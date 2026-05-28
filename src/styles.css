@@ -132,10 +132,25 @@ th {
   gap: 12px;
 }
 
+.page-header-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-header-copy {
+  display: grid;
+  gap: 0;
+}
+
 .page-title {
   margin: 4px 0 0;
   font-size: clamp(1.4rem, 2.2vw, 2rem);
   color: var(--color-text);
+}
+
+.page-header-copy .page-title {
+  margin: 0;
 }
 
 .page-subtitle,
@@ -235,6 +250,17 @@ th {
   background: #fff8f8;
   border-color: rgba(207, 34, 46, 0.18);
   color: var(--color-danger);
+}
+
+.button-icon {
+  min-width: 40px;
+  width: 40px;
+  padding: 0;
+}
+
+.button-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .tag-row {
@@ -342,6 +368,10 @@ th {
 @media (max-width: 720px) {
   :root {
     font-size: 13px;
+  }
+
+  .page-header-main {
+    width: 100%;
   }
 
   th,

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { RouterView, useRouter } from 'vue-router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
 
@@ -28,23 +28,53 @@ async function handleLogout() {
 
 <template>
   <div class="app-shell">
-    <header class="shell-header surface-card">
-      <div class="brand-block">
-        <div class="brand-mark">EI</div>
-        <div>
-          <p class="shell-kicker">Cloudflare Pages + D1 Ready</p>
-          <h1 class="shell-title">设备点检系统</h1>
-        </div>
-      </div>
+    <header class="shell-header">
+      <div class="shell-header__row">
+        <RouterLink class="shell-brand" :to="{ name: 'home' }">
+          <div class="brand-mark">EI</div>
+          <div>
+            <h1 class="shell-title">设备点检系统</h1>
+          </div>
+        </RouterLink>
 
-      <div class="user-panel">
-        <div>
-          <p class="user-name">{{ accessStore.activeUser?.name }}</p>
-          <p class="user-role">{{ currentRoleLabel || '未分配角色' }}</p>
+        <div class="user-panel">
+          <div class="user-summary">
+            <p class="user-name">{{ accessStore.activeUser?.name }}</p>
+            <p class="user-role">{{ currentRoleLabel || '未分配角色' }}</p>
+          </div>
+          <button
+            class="shell-signout"
+            type="button"
+            :disabled="isLoggingOut"
+            :aria-label="isLoggingOut ? '退出中' : '退出登录'"
+            @click="handleLogout"
+          >
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M6 3.75H4.75A1.75 1.75 0 003 5.5v5A1.75 1.75 0 004.75 12.25H6"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+              <path
+                d="M8.5 5.25L11.25 8 8.5 10.75"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+              <path
+                d="M11 8H6"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+            </svg>
+            <span class="shell-signout__label">{{ isLoggingOut ? '退出中...' : '退出登录' }}</span>
+          </button>
         </div>
-        <button class="button button-ghost" type="button" :disabled="isLoggingOut" @click="handleLogout">
-          {{ isLoggingOut ? '退出中...' : '退出登录' }}
-        </button>
       </div>
     </header>
 
@@ -57,95 +87,165 @@ async function handleLogout() {
 <style scoped>
 .app-shell {
   min-height: 100vh;
-  padding: 16px 18px 18px;
+  background: linear-gradient(180deg, #f6f8fa 0%, #eef2f6 100%);
 }
 
 .shell-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  padding: 14px 16px;
-  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid #d8dee4;
+  background: rgba(236, 242, 248, 0.96);
+  backdrop-filter: blur(10px);
 }
 
-.brand-block {
+.shell-header__row {
   display: flex;
-  gap: 12px;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 18px;
+}
+
+.shell-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .brand-mark {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: white;
-  background: #24292f;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.shell-kicker,
-.user-role {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--color-text-soft);
+  color: #24292f;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04);
 }
 
 .shell-title,
 .user-name {
-  margin: 4px 0 0;
-  font-size: 1.15rem;
-  color: var(--color-text);
-}
-
-.button-ghost {
-  min-width: 88px;
+  margin: 0;
+  font-size: 1rem;
+  color: #24292f;
 }
 
 .user-panel {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.user-summary {
+  text-align: right;
+}
+
+.user-role {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: #57606a;
+}
+
+.shell-signout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #24292f;
+  font-weight: 600;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.shell-signout:hover {
+  background: #f3f4f6;
+  border-color: #afb8c1;
+}
+
+.shell-signout:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.shell-signout svg {
+  width: 15px;
+  height: 15px;
+}
+
+.shell-signout__label {
+  white-space: nowrap;
 }
 
 .shell-main {
-  margin-top: 12px;
+  padding: 16px 18px 18px;
 }
 
 @media (max-width: 980px) {
-  .app-shell {
-    padding: 12px;
-  }
-
-  .shell-header {
-    grid-template-columns: 1fr;
-    padding: 12px;
+  .shell-header__row {
+    padding: 10px 12px;
   }
 
   .user-panel {
-    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .shell-main {
+    padding: 12px;
   }
 }
 
 @media (max-width: 640px) {
   .brand-mark {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
 
   .shell-title,
   .user-name {
-    font-size: 1rem;
+    font-size: 0.94rem;
   }
 
   .user-panel {
-    align-items: flex-start;
-    flex-direction: column;
+    gap: 8px;
+  }
+
+  .user-summary {
+    display: none;
+  }
+
+  .shell-header__row {
+    min-height: 52px;
+    padding: 8px 10px;
+  }
+
+  .shell-main {
+    padding: 10px;
+  }
+
+  .shell-signout {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    padding: 0;
+  }
+
+  .shell-signout__label {
+    display: none;
   }
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 import { useEquipmentStore } from '../stores/equipment'
 
@@ -12,10 +13,12 @@ const feedbackType = ref('success')
 const isEquipmentModalOpen = ref(false)
 const isTaskListModalOpen = ref(false)
 const isInspectionItemModalOpen = ref(false)
+const isFaultCodeModalOpen = ref(false)
 const isSparePartModalOpen = ref(false)
 const editingEquipmentId = ref('')
 const editingTaskListId = ref('')
 const editingInspectionItemId = ref('')
+const editingFaultCodeId = ref('')
 const editingSparePartId = ref('')
 const isSubmitting = ref(false)
 
@@ -48,6 +51,11 @@ const inspectionItemForm = reactive({
   description: '',
 })
 
+const faultCodeForm = reactive({
+  code: '',
+  description: '',
+})
+
 const sparePartForm = reactive({
   partNumber: '',
   description: '',
@@ -59,15 +67,15 @@ const sparePartForm = reactive({
 const equipmentList = computed(() => equipmentStore.equipmentDirectory)
 const taskListDirectory = computed(() => equipmentStore.taskListDirectory)
 const inspectionItemDirectory = computed(() => equipmentStore.inspectionItemDirectory)
+const faultCodeDirectory = computed(() => equipmentStore.faultCodeDirectory)
 const sparePartDirectory = computed(() => equipmentStore.sparePartDirectory)
 const ownerOptions = computed(() => equipmentStore.ownerOptions)
-const summaryMetrics = computed(() => equipmentStore.summaryMetrics)
-
 const equipmentEditorTitle = computed(() => (editingEquipmentId.value ? '编辑设备主数据' : '创建设备主数据'))
 const taskListEditorTitle = computed(() => (editingTaskListId.value ? '编辑任务清单' : '创建任务清单'))
 const inspectionItemEditorTitle = computed(() =>
   editingInspectionItemId.value ? '编辑点检项' : '创建点检项',
 )
+const faultCodeEditorTitle = computed(() => (editingFaultCodeId.value ? '编辑故障代码' : '创建故障代码'))
 const sparePartEditorTitle = computed(() => (editingSparePartId.value ? '编辑备件' : '创建备件'))
 
 function setFeedback(message, type = 'success') {
@@ -112,6 +120,17 @@ function closeInspectionItemModal() {
   resetInspectionItemForm()
 }
 
+function openFaultCodeModal() {
+  clearFeedback()
+  resetFaultCodeForm()
+  isFaultCodeModalOpen.value = true
+}
+
+function closeFaultCodeModal() {
+  isFaultCodeModalOpen.value = false
+  resetFaultCodeForm()
+}
+
 function openSparePartModal() {
   clearFeedback()
   resetSparePartForm()
@@ -153,6 +172,12 @@ function resetInspectionItemForm() {
   editingInspectionItemId.value = ''
   inspectionItemForm.code = ''
   inspectionItemForm.description = ''
+}
+
+function resetFaultCodeForm() {
+  editingFaultCodeId.value = ''
+  faultCodeForm.code = ''
+  faultCodeForm.description = ''
 }
 
 function resetSparePartForm() {
@@ -200,6 +225,14 @@ function editInspectionItem(inspectionItem) {
   inspectionItemForm.description = inspectionItem.description
   clearFeedback()
   isInspectionItemModalOpen.value = true
+}
+
+function editFaultCode(faultCode) {
+  editingFaultCodeId.value = faultCode.id
+  faultCodeForm.code = faultCode.code
+  faultCodeForm.description = faultCode.description
+  clearFeedback()
+  isFaultCodeModalOpen.value = true
 }
 
 function editSparePart(sparePart) {
@@ -283,6 +316,28 @@ async function removeInspectionItem(itemId) {
   }
 }
 
+async function submitFaultCode() {
+  isSubmitting.value = true
+  const result = editingFaultCodeId.value
+    ? await equipmentStore.updateFaultCode(editingFaultCodeId.value, faultCodeForm)
+    : await equipmentStore.createFaultCode(faultCodeForm)
+  isSubmitting.value = false
+  setFeedback(result.message, result.ok ? 'success' : 'error')
+
+  if (result.ok) {
+    closeFaultCodeModal()
+  }
+}
+
+async function removeFaultCode(faultCodeId) {
+  const result = await equipmentStore.deleteFaultCode(faultCodeId)
+  setFeedback(result.message, result.ok ? 'success' : 'error')
+
+  if (result.ok && editingFaultCodeId.value === faultCodeId) {
+    resetFaultCodeForm()
+  }
+}
+
 async function submitSparePart() {
   isSubmitting.value = true
   const result = editingSparePartId.value
@@ -320,12 +375,21 @@ onMounted(async () => {
 <template>
   <div class="page management-page">
     <div class="page-header">
-      <div>
-        <p class="kicker">Equipment Domain</p>
-        <h2 class="page-title">设备管理</h2>
-        <p class="page-subtitle">
-          统一维护设备主数据、点检任务清单、点检项与备件库存，并维护设备与任务清单、备件的关联关系。
-        </p>
+      <div class="page-header-main">
+        <RouterLink class="button button-ghost button-icon" :to="{ name: 'home' }" aria-label="返回主菜单">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M9.5 3.5L5 8l4.5 4.5"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+            />
+          </svg>
+        </RouterLink>
+        <div class="page-header-copy">
+          <h2 class="page-title">设备管理</h2>
+        </div>
       </div>
     </div>
 
@@ -363,6 +427,16 @@ onMounted(async () => {
         </button>
         <button
           class="tab-button"
+          :class="{ 'is-active': activeTab === 'faultCodes' }"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === 'faultCodes'"
+          @click="activeTab = 'faultCodes'"
+        >
+          故障代码
+        </button>
+        <button
+          class="tab-button"
           :class="{ 'is-active': activeTab === 'spareParts' }"
           type="button"
           role="tab"
@@ -383,7 +457,7 @@ onMounted(async () => {
       </div>
 
       <div v-if="activeTab === 'equipment'" class="tab-panel">
-        <section class="surface-card editor-card list-card">
+        <div class="list-panel">
           <div class="section-headline">
             <div>
               <p class="kicker">Equipment Assets</p>
@@ -450,11 +524,11 @@ onMounted(async () => {
               </div>
             </article>
           </div>
-        </section>
+        </div>
       </div>
 
       <div v-else-if="activeTab === 'taskLists'" class="tab-panel">
-        <section class="surface-card editor-card list-card">
+        <div class="list-panel">
           <div class="section-headline">
             <div>
               <p class="kicker">Task Lists</p>
@@ -489,11 +563,11 @@ onMounted(async () => {
               </div>
             </article>
           </div>
-        </section>
+        </div>
       </div>
 
       <div v-else-if="activeTab === 'inspectionItems'" class="tab-panel">
-        <section class="surface-card editor-card list-card">
+        <div class="list-panel">
           <div class="section-headline">
             <div>
               <p class="kicker">Inspection Items</p>
@@ -523,11 +597,44 @@ onMounted(async () => {
               </div>
             </article>
           </div>
-        </section>
+        </div>
+      </div>
+
+      <div v-else-if="activeTab === 'faultCodes'" class="tab-panel">
+        <div class="list-panel">
+          <div class="section-headline">
+            <div>
+              <p class="kicker">Fault Codes</p>
+              <h3 class="section-title">故障代码</h3>
+            </div>
+            <button class="button button-success" type="button" @click="openFaultCodeModal">新建故障代码</button>
+          </div>
+
+          <div v-if="!faultCodeDirectory.length" class="empty-state">当前还没有故障代码。</div>
+
+          <div v-else class="entity-list">
+            <article v-for="faultCode in faultCodeDirectory" :key="faultCode.id" class="entity-card">
+              <div class="entity-card__header">
+                <div>
+                  <h4>{{ faultCode.code }}</h4>
+                  <p>{{ faultCode.description }}</p>
+                </div>
+                <div class="action-row">
+                  <button class="button button-ghost" type="button" @click="editFaultCode(faultCode)">
+                    编辑
+                  </button>
+                  <button class="button button-danger" type="button" @click="removeFaultCode(faultCode.id)">
+                    删除
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
       </div>
 
       <div v-else class="tab-panel">
-        <section class="surface-card editor-card list-card">
+        <div class="list-panel">
           <div class="section-headline">
             <div>
               <p class="kicker">Spare Parts</p>
@@ -562,7 +669,7 @@ onMounted(async () => {
               </div>
             </article>
           </div>
-        </section>
+        </div>
       </div>
     </section>
 
@@ -749,6 +856,37 @@ onMounted(async () => {
       </section>
     </div>
 
+    <div v-if="isFaultCodeModalOpen" class="modal-overlay" @click.self="closeFaultCodeModal">
+      <section class="surface-card modal-card">
+        <div class="section-headline modal-headline">
+          <div>
+            <p class="kicker">Fault Codes</p>
+            <h3 class="section-title">{{ faultCodeEditorTitle }}</h3>
+          </div>
+          <button class="button button-ghost" type="button" @click="closeFaultCodeModal">关闭</button>
+        </div>
+
+        <form class="form-grid" @submit.prevent="submitFaultCode">
+          <label>
+            <span>故障 ID</span>
+            <input v-model="faultCodeForm.code" type="text" placeholder="例如 FAULT-004" />
+          </label>
+
+          <label>
+            <span>故障描述</span>
+            <textarea v-model="faultCodeForm.description" rows="4" placeholder="请输入故障描述"></textarea>
+          </label>
+
+          <div class="modal-actions">
+            <button class="button button-ghost" type="button" @click="closeFaultCodeModal">取消</button>
+            <button class="button button-success" type="submit" :disabled="isSubmitting">
+              {{ editingFaultCodeId ? '保存故障代码' : '创建故障代码' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <div v-if="isSparePartModalOpen" class="modal-overlay" @click.self="closeSparePartModal">
       <section class="surface-card modal-card">
         <div class="section-headline modal-headline">
@@ -859,15 +997,9 @@ onMounted(async () => {
   background: var(--color-brand);
 }
 
-.editor-card {
+.list-panel {
   display: grid;
-  gap: 14px;
-  padding: 18px;
-  align-content: start;
-}
-
-.list-card {
-  min-height: 520px;
+  gap: 12px;
 }
 
 .section-headline {

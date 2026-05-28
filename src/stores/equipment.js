@@ -43,6 +43,7 @@ function byId(items) {
 export const useEquipmentStore = defineStore('equipment', () => {
   const ownerOptions = ref([])
   const inspectionItems = ref([])
+  const faultCodes = ref([])
   const taskLists = ref([])
   const spareParts = ref([])
   const equipments = ref([])
@@ -52,6 +53,7 @@ export const useEquipmentStore = defineStore('equipment', () => {
   function applyPayload(payload) {
     ownerOptions.value = Array.isArray(payload.ownerOptions) ? payload.ownerOptions : []
     inspectionItems.value = Array.isArray(payload.inspectionItems) ? payload.inspectionItems : []
+    faultCodes.value = Array.isArray(payload.faultCodes) ? payload.faultCodes : []
     taskLists.value = Array.isArray(payload.taskLists) ? payload.taskLists : []
     spareParts.value = Array.isArray(payload.spareParts) ? payload.spareParts : []
     equipments.value = Array.isArray(payload.equipments) ? payload.equipments : []
@@ -92,6 +94,8 @@ export const useEquipmentStore = defineStore('equipment', () => {
     })),
   )
 
+  const faultCodeDirectory = computed(() => [...faultCodes.value])
+
   const sparePartDirectory = computed(() =>
     spareParts.value.map((sparePart) => ({
       ...sparePart,
@@ -104,6 +108,7 @@ export const useEquipmentStore = defineStore('equipment', () => {
     activeEquipment: equipments.value.filter((equipment) => equipment.status === '在用').length,
     totalTaskLists: taskLists.value.length,
     totalInspectionItems: inspectionItems.value.length,
+    totalFaultCodes: faultCodes.value.length,
     totalSpareParts: spareParts.value.length,
   }))
 
@@ -214,6 +219,44 @@ export const useEquipmentStore = defineStore('equipment', () => {
     return result
   }
 
+  async function createFaultCode(payload) {
+    const result = await requestEquipmentApi('/api/fault-codes', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+
+    if (result.ok) {
+      applyPayload(result)
+    }
+
+    return result
+  }
+
+  async function updateFaultCode(faultCodeId, payload) {
+    const result = await requestEquipmentApi(`/api/fault-codes/${faultCodeId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+
+    if (result.ok) {
+      applyPayload(result)
+    }
+
+    return result
+  }
+
+  async function deleteFaultCode(faultCodeId) {
+    const result = await requestEquipmentApi(`/api/fault-codes/${faultCodeId}`, {
+      method: 'DELETE',
+    })
+
+    if (result.ok) {
+      applyPayload(result)
+    }
+
+    return result
+  }
+
   async function updateTaskList(taskListId, payload) {
     const result = await requestEquipmentApi(`/api/task-lists/${taskListId}`, {
       method: 'PUT',
@@ -279,15 +322,19 @@ export const useEquipmentStore = defineStore('equipment', () => {
 
   return {
     createEquipment,
+    createFaultCode,
     createInspectionItem,
     createSparePart,
     createTaskList,
     deleteEquipment,
+    deleteFaultCode,
     deleteInspectionItem,
     deleteSparePart,
     deleteTaskList,
     equipmentDirectory,
     equipments,
+    faultCodeDirectory,
+    faultCodes,
     initialize,
     initializeError,
     inspectionItemDirectory,
@@ -300,6 +347,7 @@ export const useEquipmentStore = defineStore('equipment', () => {
     taskListDirectory,
     taskLists,
     updateEquipment,
+    updateFaultCode,
     updateInspectionItem,
     updateSparePart,
     updateTaskList,

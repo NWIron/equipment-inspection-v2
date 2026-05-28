@@ -22,14 +22,24 @@ const relatedRoles = computed(() =>
 <template>
   <div class="page">
     <section class="surface-card placeholder-card">
-      <p class="kicker">Module Placeholder</p>
-      <h2 class="page-title">{{ feature?.title || '模块未定义' }}</h2>
-      <p class="page-subtitle">
-        {{
-          feature?.summary ||
-          '当前模块尚未纳入一期范围，后续可在这个页面继续扩展业务流程、列表、表单与数据服务。'
-        }}
-      </p>
+      <div class="page-header">
+        <div class="page-header-main">
+          <RouterLink class="button button-ghost button-icon" :to="{ name: 'home' }" aria-label="返回主菜单">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M9.5 3.5L5 8l4.5 4.5"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </RouterLink>
+          <div class="page-header-copy">
+            <h2 class="page-title">{{ feature?.title || '模块未定义' }}</h2>
+          </div>
+        </div>
+      </div>
 
       <div class="metric-grid">
         <article class="metric-card">
@@ -47,8 +57,6 @@ const relatedRoles = computed(() =>
       <div class="tag-row">
         <span v-for="role in relatedRoles" :key="role.id" class="tag">{{ role.name }}</span>
       </div>
-
-      <RouterLink class="button" :to="{ name: 'home' }">返回工作台</RouterLink>
     </section>
   </div>
 </template>

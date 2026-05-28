@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
 
@@ -150,12 +151,21 @@ async function removeRole(roleId) {
 <template>
   <div class="page">
     <div class="page-header access-header">
-      <div>
-        <p class="kicker">Access Control</p>
-        <h2 class="page-title">用户与权限管理</h2>
-        <p class="page-subtitle">
-          维护用户主数据与角色，功能卡片权限按角色聚合，一个用户可分配多个角色。
-        </p>
+      <div class="page-header-main">
+        <RouterLink class="button button-ghost button-icon" :to="{ name: 'home' }" aria-label="返回主菜单">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M9.5 3.5L5 8l4.5 4.5"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+            />
+          </svg>
+        </RouterLink>
+        <div class="page-header-copy">
+          <h2 class="page-title">用户与权限管理</h2>
+        </div>
       </div>
     </div>
 
@@ -187,10 +197,9 @@ async function removeRole(roleId) {
         <div class="section-headline">
           <div>
             <p class="kicker">User Directory</p>
-            <h3 class="section-title">用户列表</h3>
+            <h3 class="section-title">用户列表（{{ users.length }}）</h3>
           </div>
           <div class="action-row">
-            <span class="status-pill">{{ users.length }} 个账号</span>
             <button class="button button-success" type="button" @click="openUserModal">创建用户</button>
           </div>
         </div>
@@ -251,7 +260,6 @@ async function removeRole(roleId) {
             <h3 class="section-title">角色列表</h3>
           </div>
           <div class="action-row">
-            <span class="status-pill">系统角色不可删除</span>
             <button class="button button-success" type="button" @click="openRoleModal">创建角色</button>
           </div>
         </div>
@@ -421,6 +429,7 @@ async function removeRole(roleId) {
 
 .tab-bar {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
   padding-bottom: 2px;
   border-bottom: 1px solid #d8dee4;
@@ -470,7 +479,6 @@ async function removeRole(roleId) {
   justify-content: space-between;
   gap: 12px;
   align-items: center;
-  margin-bottom: 14px;
 }
 
 .section-title {
@@ -614,7 +622,6 @@ async function removeRole(roleId) {
 }
 
 @media (max-width: 720px) {
-  .tab-bar,
   .user-item__header,
   .section-headline,
   .role-item__header {

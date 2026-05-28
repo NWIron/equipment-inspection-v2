@@ -59,6 +59,20 @@ async function loadInspectionItems(env) {
   }))
 }
 
+async function loadFaultCodes(env) {
+  const rows = (
+    await env.DB.prepare(
+      'SELECT id, fault_code, description FROM fault_codes ORDER BY fault_code ASC',
+    ).all()
+  ).results ?? []
+
+  return rows.map((row) => ({
+    id: row.id,
+    code: row.fault_code,
+    description: row.description,
+  }))
+}
+
 async function loadTaskLists(env) {
   const rows = (
     await env.DB.prepare(
@@ -186,9 +200,10 @@ async function loadEquipment(env) {
 }
 
 export async function buildEquipmentPayload(env) {
-  const [ownerOptions, inspectionItems, taskLists, spareParts, equipments] = await Promise.all([
+  const [ownerOptions, inspectionItems, faultCodes, taskLists, spareParts, equipments] = await Promise.all([
     loadOwnerOptions(env),
     loadInspectionItems(env),
+    loadFaultCodes(env),
     loadTaskLists(env),
     loadSpareParts(env),
     loadEquipment(env),
@@ -197,6 +212,7 @@ export async function buildEquipmentPayload(env) {
   return {
     ownerOptions,
     inspectionItems,
+    faultCodes,
     taskLists,
     spareParts,
     equipments,

@@ -67,6 +67,14 @@ CREATE TABLE IF NOT EXISTS inspection_items (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS fault_codes (
+  id TEXT PRIMARY KEY,
+  fault_code TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS task_lists (
   id TEXT PRIMARY KEY,
   task_list_code TEXT NOT NULL UNIQUE,
@@ -218,6 +226,12 @@ VALUES
   ('item-appearance', 'ITEM-001', '检查设备外观、铭牌和紧固状态。'),
   ('item-lubrication', 'ITEM-002', '确认润滑点状态和润滑记录是否正常。'),
   ('item-safety', 'ITEM-003', '检查急停、防护和安全联锁是否有效。');
+
+INSERT OR REPLACE INTO fault_codes (id, fault_code, description)
+VALUES
+  ('fault-sensor-drift', 'FAULT-001', '传感器零点漂移或测量偏差超限。'),
+  ('fault-overheat', 'FAULT-002', '设备运行温度异常升高。'),
+  ('fault-communication', 'FAULT-003', '控制器或上位系统通信中断。');
 
 INSERT OR REPLACE INTO task_lists (id, task_list_code, description)
 VALUES
