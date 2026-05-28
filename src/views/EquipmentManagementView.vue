@@ -680,7 +680,17 @@ onMounted(async () => {
             <p class="kicker">Equipment Assets</p>
             <h3 class="section-title">{{ equipmentEditorTitle }}</h3>
           </div>
-          <button class="button button-ghost" type="button" @click="closeEquipmentModal">关闭</button>
+          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeEquipmentModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
         </div>
 
         <form class="form-grid" @submit.prevent="submitEquipment">
@@ -783,7 +793,17 @@ onMounted(async () => {
             <p class="kicker">Task Lists</p>
             <h3 class="section-title">{{ taskListEditorTitle }}</h3>
           </div>
-          <button class="button button-ghost" type="button" @click="closeTaskListModal">关闭</button>
+          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeTaskListModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
         </div>
 
         <form class="form-grid" @submit.prevent="submitTaskList">
@@ -832,7 +852,17 @@ onMounted(async () => {
             <p class="kicker">Inspection Items</p>
             <h3 class="section-title">{{ inspectionItemEditorTitle }}</h3>
           </div>
-          <button class="button button-ghost" type="button" @click="closeInspectionItemModal">关闭</button>
+          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeInspectionItemModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
         </div>
 
         <form class="form-grid" @submit.prevent="submitInspectionItem">
@@ -863,7 +893,17 @@ onMounted(async () => {
             <p class="kicker">Fault Codes</p>
             <h3 class="section-title">{{ faultCodeEditorTitle }}</h3>
           </div>
-          <button class="button button-ghost" type="button" @click="closeFaultCodeModal">关闭</button>
+          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeFaultCodeModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
         </div>
 
         <form class="form-grid" @submit.prevent="submitFaultCode">
@@ -894,7 +934,17 @@ onMounted(async () => {
             <p class="kicker">Spare Parts</p>
             <h3 class="section-title">{{ sparePartEditorTitle }}</h3>
           </div>
-          <button class="button button-ghost" type="button" @click="closeSparePartModal">关闭</button>
+          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeSparePartModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
         </div>
 
         <form class="form-grid" @submit.prevent="submitSparePart">

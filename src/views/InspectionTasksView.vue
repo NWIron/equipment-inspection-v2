@@ -56,6 +56,14 @@ const selectedEquipment = computed(() => inspectionTaskStore.getEquipmentById(ta
 const inspectionItemPreview = computed(() => selectedEquipment.value?.inspectionItems ?? [])
 const taskModalTitle = computed(() => (editingTaskId.value ? '编辑点检任务' : '创建点检任务'))
 
+function getTaskStatusClass(status) {
+  return {
+    'is-pending': status === '待执行',
+    'is-active': status === '执行中',
+    'is-completed': status === '已完成',
+  }
+}
+
 function setFeedback(message, type = 'success') {
   feedbackMessage.value = message
   feedbackType.value = type
@@ -183,8 +191,6 @@ onMounted(async () => {
               <p>{{ task.equipment?.equipmentCode || '未关联设备' }} · {{ task.inspector?.name || '未分配点检员' }}</p>
             </div>
             <div class="action-row">
-              <span class="status-pill">{{ task.priority }}</span>
-              <span class="status-pill">{{ task.status }}</span>
               <RouterLink class="button button-primary" :to="{ name: 'inspection-task-execution', params: { taskId: task.id } }">
                 进入点检
               </RouterLink>
@@ -203,8 +209,15 @@ onMounted(async () => {
               <strong>{{ task.equipment?.ownerName || '未分配' }}</strong>
             </div>
             <div class="entity-meta-block">
-              <span class="entity-meta-label">故障信息</span>
-              <strong>{{ task.faultCode?.code || '无' }}</strong>
+              <span class="entity-meta-label">优先级</span>
+              <strong>{{ task.priority }}</strong>
+            </div>
+            <div class="entity-meta-block">
+              <span class="entity-meta-label">执行状态</span>
+              <strong class="task-status" :class="getTaskStatusClass(task.status)">
+                <span class="task-status__dot"></span>
+                {{ task.status }}
+              </strong>
             </div>
             <div class="entity-meta-block">
               <span class="entity-meta-label">点检项数量</span>
@@ -228,7 +241,17 @@ onMounted(async () => {
             <p class="kicker">Inspection Tasks</p>
             <h3 class="section-title">{{ taskModalTitle }}</h3>
           </div>
-          <button class="button button-ghost" type="button" @click="closeTaskModal">关闭</button>
+          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeTaskModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
         </div>
 
         <form class="form-grid" @submit.prevent="submitTask">
@@ -311,8 +334,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.inspection-task-page .tag,
-.inspection-task-page .status-pill {
+.inspection-task-page .tag {
   border-radius: 8px;
 }
 
@@ -381,6 +403,32 @@ onMounted(async () => {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-soft);
+}
+
+.task-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.task-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.task-status.is-pending {
+  color: #9a6700;
+}
+
+.task-status.is-active {
+  color: var(--color-brand);
+}
+
+.task-status.is-completed {
+  color: var(--color-success);
 }
 
 .form-two-column {

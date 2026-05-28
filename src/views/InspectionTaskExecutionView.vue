@@ -17,6 +17,14 @@ const executionForm = reactive({
   results: [],
 })
 
+function getTaskStatusClass(status) {
+  return {
+    'is-pending': status === '待执行',
+    'is-active': status === '执行中',
+    'is-completed': status === '已完成',
+  }
+}
+
 function setFeedback(message, type = 'success') {
   feedbackMessage.value = message
   feedbackType.value = type
@@ -111,8 +119,6 @@ onMounted(loadTask)
             <h3 class="section-title">{{ inspectionTaskStore.activeTask.taskName }}</h3>
           </div>
           <div class="action-row">
-            <span class="status-pill">{{ inspectionTaskStore.activeTask.priority }}</span>
-            <span class="status-pill">{{ inspectionTaskStore.activeTask.status }}</span>
             <button class="button" type="button" disabled>创建维修工单（预留）</button>
             <button
               class="button button-success"
@@ -145,6 +151,21 @@ onMounted(loadTask)
             <span class="entity-meta-label">任务创建时间</span>
             <strong>{{ inspectionTaskStore.activeTask.createdAt }}</strong>
           </div>
+          <div class="entity-meta-block">
+            <span class="entity-meta-label">优先级</span>
+            <strong>{{ inspectionTaskStore.activeTask.priority }}</strong>
+          </div>
+          <div class="entity-meta-block">
+            <span class="entity-meta-label">执行状态</span>
+            <strong class="task-status" :class="getTaskStatusClass(inspectionTaskStore.activeTask.status)">
+              <span class="task-status__dot"></span>
+              {{ inspectionTaskStore.activeTask.status }}
+            </strong>
+          </div>
+          <div class="entity-meta-block">
+            <span class="entity-meta-label">故障信息</span>
+            <strong>{{ inspectionTaskStore.activeTask.faultCode?.code || '无' }}</strong>
+          </div>
         </div>
       </section>
 
@@ -164,28 +185,6 @@ onMounted(loadTask)
           </button>
         </div>
 
-        <div class="form-two-column">
-          <label>
-            <span>故障信息</span>
-            <select v-model="executionForm.faultCodeId" :disabled="inspectionTaskStore.activeTask.status === '已完成'">
-              <option value="">无</option>
-              <option v-for="faultCode in inspectionTaskStore.faultCodes" :key="faultCode.id" :value="faultCode.id">
-                {{ faultCode.code }} · {{ faultCode.description }}
-              </option>
-            </select>
-          </label>
-
-          <label>
-            <span>故障说明</span>
-            <textarea
-              v-model="executionForm.faultNote"
-              rows="3"
-              placeholder="如点检过程中发现问题，可补充故障说明"
-              :disabled="inspectionTaskStore.activeTask.status === '已完成'"
-            ></textarea>
-          </label>
-        </div>
-
         <div class="entity-list">
           <article v-for="item in executionForm.results" :key="item.inspectionItemId" class="result-card">
             <div class="result-card__header">
@@ -202,28 +201,24 @@ onMounted(loadTask)
                 </select>
               </label>
             </div>
-
-            <label>
-              <span>备注</span>
-              <textarea
-                v-model="item.remark"
-                rows="3"
-                placeholder="记录点检过程、异常现象或现场说明"
-                :disabled="inspectionTaskStore.activeTask.status === '已完成'"
-              ></textarea>
-            </label>
           </article>
         </div>
+
+        <label class="fault-note-field">
+          <span>故障说明</span>
+          <textarea
+            v-model="executionForm.faultNote"
+            rows="3"
+            placeholder="如点检过程中发现问题，可在完成点检项后补充故障说明"
+            :disabled="inspectionTaskStore.activeTask.status === '已完成'"
+          ></textarea>
+        </label>
       </section>
     </template>
   </div>
 </template>
 
 <style scoped>
-.task-execution-page .status-pill {
-  border-radius: 8px;
-}
-
 .section-card {
   display: grid;
   gap: 14px;
@@ -261,6 +256,32 @@ onMounted(loadTask)
   color: var(--color-text-soft);
 }
 
+.task-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.task-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.task-status.is-pending {
+  color: #9a6700;
+}
+
+.task-status.is-active {
+  color: var(--color-brand);
+}
+
+.task-status.is-completed {
+  color: var(--color-success);
+}
+
 .entity-list {
   display: grid;
   gap: 10px;
@@ -294,6 +315,11 @@ onMounted(loadTask)
 
 .result-select-field {
   min-width: 180px;
+}
+
+.fault-note-field {
+  display: grid;
+  gap: 8px;
 }
 
 select {

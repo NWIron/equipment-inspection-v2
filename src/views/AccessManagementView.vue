@@ -304,7 +304,17 @@ async function removeRole(roleId) {
             <p class="kicker">Users</p>
             <h3 class="section-title">{{ userModalTitle }}</h3>
           </div>
-          <button class="button button-ghost" type="button" @click="closeUserModal">关闭</button>
+          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeUserModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
         </div>
 
         <div v-if="userFeedback" class="notice" :class="`notice-${userFeedbackType}`">
@@ -367,7 +377,17 @@ async function removeRole(roleId) {
             <p class="kicker">Roles</p>
             <h3 class="section-title">创建角色</h3>
           </div>
-          <button class="button button-ghost" type="button" @click="closeRoleModal">关闭</button>
+          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeRoleModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
         </div>
 
         <div v-if="roleFeedback" class="notice" :class="`notice-${roleFeedbackType}`">
