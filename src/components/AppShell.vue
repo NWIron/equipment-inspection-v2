@@ -94,8 +94,16 @@ async function handleLogout() {
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid #d8dee4;
-  background: rgba(236, 242, 248, 0.96);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(0, 35, 75, 0.96) 0,
+      rgba(0, 35, 75, 0.96) 2px,
+      rgba(255, 255, 255, 0.08) 2px,
+      rgba(255, 255, 255, 0.08) 4px
+    ),
+    linear-gradient(180deg, rgba(17, 48, 90, 0.96) 0%, rgba(8, 29, 56, 0.94) 100%);
   backdrop-filter: blur(10px);
 }
 
@@ -123,17 +131,17 @@ async function handleLogout() {
   place-items: center;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #24292f;
-  background: #ffffff;
-  border: 1px solid #d0d7de;
-  box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .shell-title,
 .user-name {
   margin: 0;
   font-size: 1rem;
-  color: #24292f;
+  color: #ffffff;
 }
 
 .user-panel {
@@ -151,7 +159,7 @@ async function handleLogout() {
 .user-role {
   margin: 2px 0 0;
   font-size: 0.75rem;
-  color: #57606a;
+  color: rgba(255, 255, 255, 0.76);
 }
 
 .shell-signout {
@@ -162,10 +170,10 @@ async function handleLogout() {
   min-width: 36px;
   height: 36px;
   padding: 0 10px;
-  border: 1px solid #d0d7de;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
-  background: #ffffff;
-  color: #24292f;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
   font-weight: 600;
   transition:
     background-color 0.2s ease,
@@ -173,8 +181,8 @@ async function handleLogout() {
 }
 
 .shell-signout:hover {
-  background: #f3f4f6;
-  border-color: #afb8c1;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 .shell-signout:disabled {
