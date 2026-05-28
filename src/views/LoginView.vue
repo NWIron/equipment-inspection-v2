@@ -129,8 +129,14 @@ onMounted(() => {
   justify-content: center;
   padding: 24px 16px;
   background:
-    radial-gradient(circle at top, rgba(9, 105, 218, 0.08), transparent 32%),
-    linear-gradient(180deg, #f6f8fa 0%, #eef2f6 100%);
+    repeating-linear-gradient(
+      -45deg,
+      rgba(0, 35, 75, 0.96) 0,
+      rgba(0, 35, 75, 0.96) 2px,
+      rgba(255, 255, 255, 0.08) 2px,
+      rgba(255, 255, 255, 0.08) 4px
+    ),
+    linear-gradient(180deg, rgba(17, 48, 90, 0.96) 0%, rgba(8, 29, 56, 0.94) 100%);
 }
 
 .login-card {

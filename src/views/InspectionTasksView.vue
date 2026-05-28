@@ -49,7 +49,6 @@ const taskForm = reactive({
 const taskDirectory = computed(() => inspectionTaskStore.taskDirectory)
 const equipmentOptions = computed(() => inspectionTaskStore.equipmentOptions)
 const inspectorOptions = computed(() => inspectionTaskStore.inspectorOptions)
-const faultCodes = computed(() => inspectionTaskStore.faultCodes)
 const priorityOptions = computed(() => inspectionTaskStore.priorityOptions)
 const statusOptions = computed(() => inspectionTaskStore.statusOptions)
 const selectedEquipment = computed(() => inspectionTaskStore.getEquipmentById(taskForm.equipmentId))
@@ -273,16 +272,6 @@ onMounted(async () => {
                 <option value="">请选择点检员</option>
                 <option v-for="inspector in inspectorOptions" :key="inspector.id" :value="inspector.id">
                   {{ inspector.name }} / {{ inspector.accountName }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              <span>故障信息</span>
-              <select v-model="taskForm.faultCodeId">
-                <option value="">无</option>
-                <option v-for="faultCode in faultCodes" :key="faultCode.id" :value="faultCode.id">
-                  {{ faultCode.code }} · {{ faultCode.description }}
                 </option>
               </select>
             </label>

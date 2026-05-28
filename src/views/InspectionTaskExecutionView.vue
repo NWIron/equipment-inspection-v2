@@ -196,10 +196,12 @@ onMounted(loadTask)
 
         <div class="fault-info-field">
           <span>故障信息</span>
-          <div class="fault-info-field__content">
-            <strong class="fault-info-field__code">{{ inspectionTaskStore.activeTask.faultCode?.code || '无' }}</strong>
-            <p>{{ inspectionTaskStore.activeTask.faultCode?.description || '当前任务未配置故障代码。' }}</p>
-          </div>
+          <select v-model="executionForm.faultCodeId" :disabled="inspectionTaskStore.activeTask.status === '已完成'">
+            <option value="">无</option>
+            <option v-for="faultCode in inspectionTaskStore.faultCodes" :key="faultCode.id" :value="faultCode.id">
+              {{ faultCode.code }} · {{ faultCode.description }}
+            </option>
+          </select>
         </div>
 
         <label class="fault-note-field">
@@ -325,27 +327,10 @@ onMounted(loadTask)
   gap: 6px;
 }
 
-.fault-info-field__content {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: baseline;
-}
-
 .fault-info-field > span {
   font-size: 0.86rem;
   font-weight: 600;
   color: var(--color-text);
-}
-
-.fault-info-field__code {
-  font-size: 0.94rem;
-}
-
-.fault-info-field p {
-  margin: 0;
-  color: var(--color-text-soft);
-  font-size: 0.82rem;
 }
 
 .empty-state {
