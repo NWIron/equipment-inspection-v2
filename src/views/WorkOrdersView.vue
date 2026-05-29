@@ -70,6 +70,7 @@ const editingWorkOrderId = ref('')
 const isSubmitting = ref(false)
 const isConfirming = ref(false)
 const confirmingWorkOrderId = ref('')
+const sourceInspectionTask = ref(null)
 
 const workOrderForm = reactive({
   equipmentId: '',
@@ -114,16 +115,29 @@ function applyDraftToForm(draft = null) {
   workOrderForm.createdAt = toDateTimeInput(activeDraft?.createdAt)
   workOrderForm.createdByUserId = activeDraft?.createdByUserId ?? creatorOptions.value[0]?.id ?? ''
   workOrderForm.sourceInspectionTaskId = activeDraft?.sourceInspectionTaskId ?? ''
+  sourceInspectionTask.value = activeDraft?.sourceInspectionTask ?? null
+}
+
+function createBlankDraft() {
+  return {
+    equipmentId: equipmentOptions.value[0]?.id ?? '',
+    faultCodeId: '',
+    priority: priorityOptions.value[1] ?? priorityOptions.value[0] ?? '中',
+    createdAt: createDefaultDateTime(),
+    createdByUserId: creatorOptions.value[0]?.id ?? '',
+    sourceInspectionTaskId: '',
+    sourceInspectionTask: null,
+  }
 }
 
 function openCreateModal() {
-  applyDraftToForm()
+  applyDraftToForm(createBlankDraft())
   isWorkOrderModalOpen.value = true
 }
 
 function closeWorkOrderModal() {
   isWorkOrderModalOpen.value = false
-  applyDraftToForm()
+  applyDraftToForm(createBlankDraft())
 }
 
 function editWorkOrder(workOrder) {
@@ -134,6 +148,7 @@ function editWorkOrder(workOrder) {
   workOrderForm.createdAt = toDateTimeInput(workOrder.createdAt)
   workOrderForm.createdByUserId = workOrder.createdByUserId
   workOrderForm.sourceInspectionTaskId = workOrder.sourceInspectionTaskId ?? ''
+  sourceInspectionTask.value = workOrder.sourceInspectionTask ?? null
   isWorkOrderModalOpen.value = true
 }
 
@@ -368,6 +383,11 @@ onMounted(async () => {
             <label>
               <span>创建人联系方式</span>
               <input :value="selectedCreator?.contactLabel || ''" type="text" readonly placeholder="自动带出" />
+            </label>
+
+            <label v-if="sourceInspectionTask?.taskNumber">
+              <span>来源点检任务</span>
+              <input :value="sourceInspectionTask.taskNumber" type="text" readonly disabled />
             </label>
           </div>
 

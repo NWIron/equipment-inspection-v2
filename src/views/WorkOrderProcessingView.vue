@@ -236,7 +236,7 @@ onMounted(loadWorkOrder)
                 class="inline-link"
                 :to="{ name: 'inspection-task-execution', params: { taskId: workOrder.sourceInspectionTask.id } }"
               >
-                {{ workOrder.sourceInspectionTask.taskName }}
+                {{ workOrder.sourceInspectionTask.taskNumber || '无' }}
               </RouterLink>
             </strong>
             <strong v-else>无</strong>

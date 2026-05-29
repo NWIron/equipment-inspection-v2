@@ -30,12 +30,36 @@ async function handleLogout() {
   <div class="app-shell">
     <header class="shell-header">
       <div class="shell-header__row">
-        <RouterLink class="shell-brand" :to="{ name: 'home' }">
-          <div class="brand-mark">EI</div>
+        <div class="shell-brand">
+          <RouterLink class="shell-home" :to="{ name: 'home' }" aria-label="主页">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M2.75 6.75L8 2.5l5.25 4.25"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+              <path
+                d="M4.25 6.25v6.25h7.5V6.25"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+              <path
+                d="M6.5 12.5V9.25h3V12.5"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+            </svg>
+          </RouterLink>
           <div>
-            <h1 class="shell-title">设备点检系统</h1>
+            <h1 class="shell-title">METTLER TOLEDO</h1>
           </div>
-        </RouterLink>
+        </div>
 
         <div class="user-panel">
           <div class="user-summary">
@@ -123,18 +147,29 @@ async function handleLogout() {
   min-width: 0;
 }
 
-.brand-mark {
+.shell-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.shell-home:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.shell-home svg {
+  width: 16px;
+  height: 16px;
 }
 
 .shell-title,
@@ -218,7 +253,7 @@ async function handleLogout() {
 }
 
 @media (max-width: 640px) {
-  .brand-mark {
+  .shell-home {
     width: 32px;
     height: 32px;
   }

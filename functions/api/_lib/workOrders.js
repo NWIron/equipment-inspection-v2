@@ -171,6 +171,7 @@ async function loadInspectionTaskSummaries(env, taskIds) {
   const rows = (
     await env.DB.prepare(
       `SELECT inspection_tasks.id,
+              inspection_tasks.task_number,
               inspection_tasks.task_name,
               inspection_tasks.equipment_id,
               inspection_tasks.fault_code_id,
@@ -191,6 +192,7 @@ async function loadInspectionTaskSummaries(env, taskIds) {
       row.id,
       {
         id: row.id,
+        taskNumber: row.task_number,
         taskName: row.task_name,
         equipmentId: row.equipment_id,
         faultCodeId: row.fault_code_id,
