@@ -30,6 +30,35 @@ function toDateTimeInput(value) {
   return new Date(date.getTime() - offset * 60 * 1000).toISOString().slice(0, 16)
 }
 
+function formatDateTimeDisplay(value) {
+  if (!value) {
+    return '--'
+  }
+
+  const normalized = String(value).trim()
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/)
+
+  if (match) {
+    const [, year, month, day, hours, minutes, seconds = '00'] = match
+    return `${year}-${day}-${month} ${hours}:${minutes}:${seconds}`
+  }
+
+  const date = new Date(normalized)
+
+  if (Number.isNaN(date.getTime())) {
+    return normalized.replace('T', ' ')
+  }
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+
+  return `${year}-${day}-${month} ${hours}:${minutes}:${seconds}`
+}
+
 const inspectionTaskStore = useInspectionTaskStore()
 const toastStore = useMessageToastStore()
 const isTaskModalOpen = ref(false)
@@ -178,7 +207,7 @@ onMounted(async () => {
           <div class="entity-card__header">
             <div>
               <h4>{{ task.taskName }}</h4>
-              <p>{{ task.equipment?.equipmentCode || '未关联设备' }} · {{ task.inspector?.name || '未分配点检员' }}</p>
+              <p>{{ task.taskNumber || '待生成任务单号' }} · {{ task.equipment?.equipmentCode || '未关联设备' }} · {{ task.inspector?.name || '未分配点检员' }}</p>
             </div>
             <div class="action-row">
               <RouterLink class="button button-primary" :to="{ name: 'inspection-task-execution', params: { taskId: task.id } }">
@@ -191,8 +220,12 @@ onMounted(async () => {
 
           <div class="entity-meta-grid">
             <div class="entity-meta-block">
+              <span class="entity-meta-label">任务单号</span>
+              <strong>{{ task.taskNumber || '待生成' }}</strong>
+            </div>
+            <div class="entity-meta-block">
               <span class="entity-meta-label">任务创建时间</span>
-              <strong>{{ task.createdAt }}</strong>
+              <strong>{{ formatDateTimeDisplay(task.createdAt) }}</strong>
             </div>
             <div class="entity-meta-block">
               <span class="entity-meta-label">设备责任人</span>

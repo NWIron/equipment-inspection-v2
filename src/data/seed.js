@@ -26,7 +26,7 @@ export const FEATURE_CATALOG = [
     category: 'Maintenance',
     shortLabel: 'WO',
     accent: 'amber',
-    phaseLabel: '待细化',
+    phaseLabel: '一期开发中',
     path: '/modules/work-orders',
   },
   {

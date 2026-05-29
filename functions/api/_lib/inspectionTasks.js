@@ -139,6 +139,7 @@ async function loadTaskRows(env, taskIds = null) {
   const placeholders = hasFilter ? buildPlaceholders(taskIds) : ''
   const query = [
     `SELECT inspection_tasks.id,
+          inspection_tasks.task_number,
             inspection_tasks.task_name,
             inspection_tasks.created_at,
             inspection_tasks.equipment_id,
@@ -215,6 +216,7 @@ function buildTaskPayloads(taskRows, equipmentOptions, inspectorOptions, faultCo
 
     return {
       id: row.id,
+      taskNumber: row.task_number,
       taskName: row.task_name,
       createdAt: row.created_at,
       equipmentId: row.equipment_id,
@@ -329,6 +331,26 @@ export async function loadExistingTaskResultMap(env, taskId) {
     }
     return lookup
   }, {})
+}
+
+export async function generateInspectionTaskNumber(env, createdAt) {
+  const normalizedDate = normalizeText(createdAt).replace(/[^0-9]/g, '').slice(0, 8)
+  const dateToken = normalizedDate || new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const prefix = `IT-${dateToken}-`
+  const latest = await env.DB.prepare(
+    `SELECT task_number
+     FROM inspection_tasks
+     WHERE task_number LIKE ?1
+     ORDER BY task_number DESC
+     LIMIT 1`,
+  )
+    .bind(`${prefix}%`)
+    .first()
+
+  const currentSequence = latest?.task_number ? Number.parseInt(String(latest.task_number).slice(-3), 10) : 0
+  const nextSequence = Number.isInteger(currentSequence) ? currentSequence + 1 : 1
+
+  return `${prefix}${String(nextSequence).padStart(3, '0')}`
 }
 
 export function normalizeInspectionTaskBody(body) {

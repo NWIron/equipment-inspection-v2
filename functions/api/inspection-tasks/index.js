@@ -1,6 +1,7 @@
 import { requireFeatureAccess } from '../_lib/access'
 import {
   buildInspectionTaskBootstrapPayload,
+  generateInspectionTaskNumber,
   getEquipmentInspectionItems,
   normalizeInspectionTaskBody,
   validateInspectionTaskReferences,
@@ -33,16 +34,18 @@ export async function onRequestPost({ env, request }) {
   }
 
   const taskId = crypto.randomUUID()
+  const taskNumber = await generateInspectionTaskNumber(env, body.createdAt)
   const inspectionItems = await getEquipmentInspectionItems(env, body.equipmentId)
 
   await env.DB.batch([
     env.DB.prepare(
       `INSERT INTO inspection_tasks (
-         id, task_name, created_at, equipment_id, inspector_user_id, fault_code_id, fault_note, priority, status
+        id, task_number, task_name, created_at, equipment_id, inspector_user_id, fault_code_id, fault_note, priority, status
        )
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
     ).bind(
       taskId,
+      taskNumber,
       body.taskName,
       body.createdAt,
       body.equipmentId,

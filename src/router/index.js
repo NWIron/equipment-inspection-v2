@@ -47,6 +47,19 @@ const router = createRouter({
           meta: { featureId: 'inspection-tasks' },
         },
         {
+          path: 'modules/work-orders',
+          name: 'work-order-management',
+          component: () => import('../views/WorkOrdersView.vue'),
+          meta: { featureId: 'work-orders' },
+        },
+        {
+          path: 'modules/work-orders/:workOrderId',
+          name: 'work-order-processing',
+          component: () => import('../views/WorkOrderProcessingView.vue'),
+          props: true,
+          meta: { featureId: 'work-orders' },
+        },
+        {
           path: 'modules/:moduleId',
           name: 'module-placeholder',
           component: () => import('../views/ModulePlaceholderView.vue'),

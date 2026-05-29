@@ -5,6 +5,35 @@ import { RouterLink, useRoute } from 'vue-router'
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
 import { useMessageToastStore } from '../stores/messageToast'
 
+function formatDateTimeDisplay(value) {
+  if (!value) {
+    return '--'
+  }
+
+  const normalized = String(value).trim()
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/) 
+
+  if (match) {
+    const [, year, month, day, hours, minutes, seconds = '00'] = match
+    return `${year}-${day}-${month} ${hours}:${minutes}:${seconds}`
+  }
+
+  const date = new Date(normalized)
+
+  if (Number.isNaN(date.getTime())) {
+    return normalized.replace('T', ' ')
+  }
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+
+  return `${year}-${day}-${month} ${hours}:${minutes}:${seconds}`
+}
+
 const route = useRoute()
 const inspectionTaskStore = useInspectionTaskStore()
 const toastStore = useMessageToastStore()
@@ -113,7 +142,12 @@ onMounted(loadTask)
             <h3 class="section-title">{{ inspectionTaskStore.activeTask.taskName }}</h3>
           </div>
           <div class="action-row">
-            <button class="button" type="button" disabled>创建维修工单（预留）</button>
+            <RouterLink
+              class="button"
+              :to="{ name: 'work-order-management', query: { sourceTaskId: inspectionTaskStore.activeTask.id } }"
+            >
+              创建维修工单
+            </RouterLink>
             <button
               class="button button-success"
               type="button"
@@ -126,6 +160,10 @@ onMounted(loadTask)
         </div>
 
         <div class="entity-meta-grid">
+          <div class="entity-meta-block">
+            <span class="entity-meta-label">任务单号</span>
+            <strong>{{ inspectionTaskStore.activeTask.taskNumber || '待生成' }}</strong>
+          </div>
           <div class="entity-meta-block">
             <span class="entity-meta-label">设备信息</span>
             <strong>
@@ -143,7 +181,7 @@ onMounted(loadTask)
           </div>
           <div class="entity-meta-block">
             <span class="entity-meta-label">任务创建时间</span>
-            <strong>{{ inspectionTaskStore.activeTask.createdAt }}</strong>
+            <strong>{{ formatDateTimeDisplay(inspectionTaskStore.activeTask.createdAt) }}</strong>
           </div>
           <div class="entity-meta-block">
             <span class="entity-meta-label">优先级</span>

@@ -1,5 +1,10 @@
 PRAGMA foreign_keys = ON;
 
+DROP TABLE IF EXISTS work_order_tasks;
+DROP TABLE IF EXISTS work_orders;
+DROP TABLE IF EXISTS inspection_task_results;
+DROP TABLE IF EXISTS inspection_tasks;
+
 CREATE TABLE IF NOT EXISTS features (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -143,6 +148,7 @@ CREATE TABLE IF NOT EXISTS equipment_spare_parts (
 
 CREATE TABLE IF NOT EXISTS inspection_tasks (
   id TEXT PRIMARY KEY,
+  task_number TEXT NOT NULL UNIQUE,
   task_name TEXT NOT NULL,
   created_at TEXT NOT NULL,
   equipment_id TEXT NOT NULL,
@@ -170,6 +176,36 @@ CREATE TABLE IF NOT EXISTS inspection_task_results (
   FOREIGN KEY (inspection_item_id) REFERENCES inspection_items(id) ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS work_orders (
+  id TEXT PRIMARY KEY,
+  order_number TEXT NOT NULL UNIQUE,
+  source_inspection_task_id TEXT,
+  equipment_id TEXT NOT NULL,
+  fault_code_id TEXT,
+  priority TEXT NOT NULL DEFAULT '中',
+  created_at TEXT NOT NULL,
+  created_by_user_id TEXT NOT NULL,
+  creator_contact TEXT NOT NULL DEFAULT '',
+  confirmed_at TEXT,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (source_inspection_task_id) REFERENCES inspection_tasks(id) ON DELETE SET NULL,
+  FOREIGN KEY (equipment_id) REFERENCES equipment_assets(id) ON DELETE CASCADE,
+  FOREIGN KEY (fault_code_id) REFERENCES fault_codes(id) ON DELETE SET NULL,
+  FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS work_order_tasks (
+  id TEXT PRIMARY KEY,
+  work_order_id TEXT NOT NULL,
+  task_name TEXT NOT NULL,
+  engineer_user_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT '进行中',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (work_order_id) REFERENCES work_orders(id) ON DELETE CASCADE,
+  FOREIGN KEY (engineer_user_id) REFERENCES users(id) ON DELETE RESTRICT
+);
+
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role_id ON user_roles(role_id);
@@ -181,6 +217,32 @@ CREATE INDEX IF NOT EXISTS idx_equipment_spare_parts_spare_part_id ON equipment_
 CREATE INDEX IF NOT EXISTS idx_inspection_tasks_equipment_id ON inspection_tasks(equipment_id);
 CREATE INDEX IF NOT EXISTS idx_inspection_tasks_inspector_user_id ON inspection_tasks(inspector_user_id);
 CREATE INDEX IF NOT EXISTS idx_inspection_tasks_status ON inspection_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_inspection_tasks_task_number ON inspection_tasks(task_number);
+CREATE INDEX IF NOT EXISTS idx_work_orders_equipment_id ON work_orders(equipment_id);
+CREATE INDEX IF NOT EXISTS idx_work_orders_created_by_user_id ON work_orders(created_by_user_id);
+CREATE INDEX IF NOT EXISTS idx_work_orders_fault_code_id ON work_orders(fault_code_id);
+CREATE INDEX IF NOT EXISTS idx_work_orders_source_inspection_task_id ON work_orders(source_inspection_task_id);
+CREATE INDEX IF NOT EXISTS idx_work_order_tasks_work_order_id ON work_order_tasks(work_order_id);
+CREATE INDEX IF NOT EXISTS idx_work_order_tasks_engineer_user_id ON work_order_tasks(engineer_user_id);
+
+DELETE FROM auth_sessions;
+DELETE FROM work_order_tasks;
+DELETE FROM work_orders;
+DELETE FROM inspection_task_results;
+DELETE FROM inspection_tasks;
+DELETE FROM equipment_task_lists;
+DELETE FROM equipment_spare_parts;
+DELETE FROM task_list_items;
+DELETE FROM equipment_assets;
+DELETE FROM spare_parts;
+DELETE FROM task_lists;
+DELETE FROM fault_codes;
+DELETE FROM inspection_items;
+DELETE FROM user_roles;
+DELETE FROM role_features;
+DELETE FROM users;
+DELETE FROM roles;
+DELETE FROM features;
 
 INSERT OR REPLACE INTO features (id, title, summary, category, path, sort_order)
 VALUES
@@ -347,6 +409,7 @@ VALUES
 
 INSERT OR REPLACE INTO inspection_tasks (
   id,
+  task_number,
   task_name,
   created_at,
   equipment_id,
@@ -360,6 +423,7 @@ INSERT OR REPLACE INTO inspection_tasks (
 VALUES
   (
     'inspection-task-balance-daily',
+    'IT-20260528-001',
     '电子天平日常点检',
     '2026-05-28T09:00',
     'equipment-balance-001',
@@ -381,3 +445,40 @@ INSERT OR REPLACE INTO inspection_task_results (
 VALUES
   ('inspection-task-balance-daily', 'item-appearance', 10, '待检', ''),
   ('inspection-task-balance-daily', 'item-safety', 20, '待检', '');
+
+INSERT OR REPLACE INTO work_orders (
+  id,
+  order_number,
+  source_inspection_task_id,
+  equipment_id,
+  fault_code_id,
+  priority,
+  created_at,
+  created_by_user_id,
+  creator_contact,
+  confirmed_at
+)
+VALUES
+  (
+    'work-order-balance-001',
+    'WO-20260529-001',
+    'inspection-task-balance-daily',
+    'equipment-balance-001',
+    'fault-sensor-drift',
+    '中',
+    '2026-05-29T10:30',
+    'user-engineer',
+    '张工程师 / 13800000003',
+    NULL
+  );
+
+INSERT OR REPLACE INTO work_order_tasks (
+  id,
+  work_order_id,
+  task_name,
+  engineer_user_id,
+  status
+)
+VALUES
+  ('work-order-task-001', 'work-order-balance-001', '校准传感器零点', 'user-engineer', '进行中'),
+  ('work-order-task-002', 'work-order-balance-001', '复核稳定性并记录结果', 'user-engineer', '待验收');
