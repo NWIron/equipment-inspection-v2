@@ -1,15 +1,17 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
 import { useMessageToastStore } from '../stores/messageToast'
+import { goBackOrHome } from '../utils/navigation'
 import {
   createDateTimeInputValue as createDefaultTaskTime,
   formatDateTimeDisplay,
   toDateTimeInputValue as toDateTimeInput,
 } from '../utils/datetime'
 
+const router = useRouter()
 const inspectionTaskStore = useInspectionTaskStore()
 const toastStore = useMessageToastStore()
 const isTaskModalOpen = ref(false)
@@ -48,6 +50,10 @@ function setFeedback(message, type = 'success') {
 }
 
 function clearFeedback() {
+}
+
+function goBack() {
+  goBackOrHome(router)
 }
 
 function resetTaskForm() {
@@ -123,7 +129,7 @@ onMounted(async () => {
   <div class="page inspection-task-page">
     <div class="page-header">
       <div class="page-header-main">
-        <RouterLink class="button button-ghost button-icon" :to="{ name: 'home' }" aria-label="返回主菜单">
+        <button class="button button-ghost button-icon" type="button" aria-label="返回上一页" @click="goBack">
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M9.5 3.5L5 8l4.5 4.5"
@@ -133,7 +139,7 @@ onMounted(async () => {
               stroke-width="1.5"
             />
           </svg>
-        </RouterLink>
+        </button>
         <div class="page-header-copy">
           <h2 class="page-title">点检任务</h2>
         </div>

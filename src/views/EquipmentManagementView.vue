@@ -1,12 +1,14 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { useEquipmentStore } from '../stores/equipment'
 import { useMessageToastStore } from '../stores/messageToast'
+import { goBackOrHome } from '../utils/navigation'
 
 const STATUS_OPTIONS = ['在用', '停用', '检修中', '待报废']
 
+const router = useRouter()
 const equipmentStore = useEquipmentStore()
 const toastStore = useMessageToastStore()
 const activeTab = ref('equipment')
@@ -251,6 +253,10 @@ function openAutoPurchasePlaceholder() {
   setFeedback('自动采购备件功能待开发。', 'info')
 }
 
+function goBack() {
+  goBackOrHome(router)
+}
+
 async function submitEquipment() {
   isSubmitting.value = true
   const payload = {
@@ -381,7 +387,7 @@ onMounted(async () => {
   <div class="page management-page">
     <div class="page-header">
       <div class="page-header-main">
-        <RouterLink class="button button-ghost button-icon" :to="{ name: 'home' }" aria-label="返回主菜单">
+        <button class="button button-ghost button-icon" type="button" aria-label="返回上一页" @click="goBack">
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M9.5 3.5L5 8l4.5 4.5"
@@ -391,7 +397,7 @@ onMounted(async () => {
               stroke-width="1.5"
             />
           </svg>
-        </RouterLink>
+        </button>
         <div class="page-header-copy">
           <h2 class="page-title">设备管理</h2>
         </div>

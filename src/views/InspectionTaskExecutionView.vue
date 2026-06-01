@@ -1,12 +1,14 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
 import { useMessageToastStore } from '../stores/messageToast'
+import { goBackOrHome } from '../utils/navigation'
 import { formatDateTimeDisplay } from '../utils/datetime'
 
 const route = useRoute()
+const router = useRouter()
 const inspectionTaskStore = useInspectionTaskStore()
 const toastStore = useMessageToastStore()
 const isSaving = ref(false)
@@ -85,6 +87,10 @@ function getTaskStatusClass(status) {
 
 function setFeedback(message, type = 'success') {
   toastStore.show(message, type)
+}
+
+function goBack() {
+  goBackOrHome(router)
 }
 
 function applyTask(task) {
@@ -193,7 +199,7 @@ onMounted(loadTask)
   <div class="page task-execution-page">
     <div class="page-header">
       <div class="page-header-main">
-        <RouterLink class="button button-ghost button-icon" :to="{ name: 'home' }" aria-label="返回主菜单">
+        <button class="button button-ghost button-icon" type="button" aria-label="返回上一页" @click="goBack">
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M9.5 3.5L5 8l4.5 4.5"
@@ -203,12 +209,11 @@ onMounted(loadTask)
               stroke-width="1.5"
             />
           </svg>
-        </RouterLink>
+        </button>
         <div class="page-header-copy">
           <h2 class="page-title">任务点检</h2>
         </div>
       </div>
-      <RouterLink class="button button-ghost" :to="{ name: 'inspection-task-management' }">返回任务清单</RouterLink>
     </div>
 
     <div v-if="inspectionTaskStore.isLoadingTask" class="notice">正在加载任务详情...</div>

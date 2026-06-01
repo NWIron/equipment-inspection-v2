@@ -1,11 +1,13 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
 import { useMessageToastStore } from '../stores/messageToast'
+import { goBackOrHome } from '../utils/navigation'
 import { formatDateTimeDisplay } from '../utils/datetime'
 
+const router = useRouter()
 const accessStore = useAccessStore()
 const toastStore = useMessageToastStore()
 const activeTab = ref('users')
@@ -117,6 +119,10 @@ function setRoleFeedback(result) {
   toastStore.show(result.message, result.ok ? 'success' : 'error')
 }
 
+function goBack() {
+  goBackOrHome(router)
+}
+
 async function submitUser() {
   isSavingUser.value = true
   const result = isEditingUser.value
@@ -166,7 +172,7 @@ async function removeRole(roleId) {
   <div class="page">
     <div class="page-header access-header">
       <div class="page-header-main">
-        <RouterLink class="button button-ghost button-icon" :to="{ name: 'home' }" aria-label="返回主菜单">
+        <button class="button button-ghost button-icon" type="button" aria-label="返回上一页" @click="goBack">
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M9.5 3.5L5 8l4.5 4.5"
@@ -176,7 +182,7 @@ async function removeRole(roleId) {
               stroke-width="1.5"
             />
           </svg>
-        </RouterLink>
+        </button>
         <div class="page-header-copy">
           <h2 class="page-title">用户与权限管理</h2>
         </div>

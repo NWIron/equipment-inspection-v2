@@ -1,8 +1,9 @@
 <script setup>
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
+import { goBackOrHome } from '../utils/navigation'
 
 const props = defineProps({
   moduleId: {
@@ -11,12 +12,17 @@ const props = defineProps({
   },
 })
 
+const router = useRouter()
 const accessStore = useAccessStore()
 
 const feature = computed(() => accessStore.getFeatureById(props.moduleId))
 const relatedRoles = computed(() =>
   accessStore.roles.filter((role) => role.featureIds.includes(props.moduleId)),
 )
+
+function goBack() {
+  goBackOrHome(router)
+}
 </script>
 
 <template>
@@ -24,7 +30,7 @@ const relatedRoles = computed(() =>
     <section class="surface-card placeholder-card">
       <div class="page-header">
         <div class="page-header-main">
-          <RouterLink class="button button-ghost button-icon" :to="{ name: 'home' }" aria-label="返回主菜单">
+          <button class="button button-ghost button-icon" type="button" aria-label="返回上一页" @click="goBack">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path
                 d="M9.5 3.5L5 8l4.5 4.5"
@@ -34,7 +40,7 @@ const relatedRoles = computed(() =>
                 stroke-width="1.5"
               />
             </svg>
-          </RouterLink>
+          </button>
           <div class="page-header-copy">
             <h2 class="page-title">{{ feature?.title || '模块未定义' }}</h2>
           </div>
