@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
 import { useMessageToastStore } from '../stores/messageToast'
+import { formatDateTimeDisplay } from '../utils/datetime'
 
 const accessStore = useAccessStore()
 const toastStore = useMessageToastStore()
@@ -251,7 +252,7 @@ async function removeRole(roleId) {
               </div>
               <div class="user-meta-block">
                 <span class="user-meta-label">最近登录</span>
-                <strong>{{ user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : '未登录' }}</strong>
+                <strong>{{ formatDateTimeDisplay(user.lastLoginAt, '未登录') }}</strong>
               </div>
             </div>
 
