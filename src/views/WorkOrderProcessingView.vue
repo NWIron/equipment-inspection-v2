@@ -51,10 +51,16 @@ const isSparePartModalOpen = ref(false)
 const isConfirmModalOpen = ref(false)
 const isConfirming = ref(false)
 const isSavingSpareParts = ref(false)
+const isProcessingPhotos = ref(false)
 const editingTaskId = ref('')
 const sparePartsForm = ref([])
+const workOrderPhotos = ref([])
 const sparePartSearchKeyword = ref('')
 const selectedSparePartIds = ref([])
+
+const MAX_PHOTO_COUNT = 6
+const MAX_PHOTO_DIMENSION = 1600
+const MAX_PHOTO_DATA_LENGTH = 1_800_000
 
 const taskForm = reactive({
   taskName: '',
@@ -111,6 +117,57 @@ function setFeedback(message, type = 'success') {
   toastStore.show(message, type)
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result ?? ''))
+    reader.onerror = () => reject(new Error('读取照片失败，请重试。'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('照片解析失败，请重新拍摄。'))
+    image.src = dataUrl
+  })
+}
+
+async function compressPhoto(file) {
+  const dataUrl = await readFileAsDataUrl(file)
+  const image = await loadImage(dataUrl)
+  const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(image.width, image.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(image.width * scale))
+  canvas.height = Math.max(1, Math.round(image.height * scale))
+
+  const context = canvas.getContext('2d')
+
+  if (!context) {
+    throw new Error('无法处理照片，请更换浏览器后重试。')
+  }
+
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
+  const compressed = canvas.toDataURL('image/jpeg', 0.82)
+
+  if (!compressed.startsWith('data:image/')) {
+    throw new Error('照片压缩失败，请重试。')
+  }
+
+  if (compressed.length > MAX_PHOTO_DATA_LENGTH) {
+    throw new Error('单张照片体积仍然过大，请重新拍摄更清晰但更近距离的照片。')
+  }
+
+  const normalizedName = file.name && file.name.trim() ? file.name.replace(/\.[^.]+$/, '') : `work-order-photo-${Date.now()}`
+
+  return {
+    fileName: `${normalizedName}.jpg`,
+    photoData: compressed,
+  }
+}
+
 function syncSparePartsForm() {
   sparePartsForm.value = (workOrder.value?.spareParts ?? []).map((item) => ({
     sparePartId: item.sparePartId ?? item.id,
@@ -124,11 +181,74 @@ function syncSparePartsForm() {
   sparePartSearchKeyword.value = ''
 }
 
+function syncPhotoForm() {
+  workOrderPhotos.value = (workOrder.value?.photos ?? []).map((item) => ({
+    id: item.id,
+    fileName: item.fileName,
+    photoData: item.photoData,
+  }))
+}
+
+function syncWorkOrderForms() {
+  syncSparePartsForm()
+  syncPhotoForm()
+}
+
 function buildSparePartPayload() {
   return sparePartsForm.value.map((item) => ({
     sparePartId: item.sparePartId,
     requiredQuantity: item.requiredQuantity,
   }))
+}
+
+function buildPhotoPayload() {
+  return workOrderPhotos.value.map((item, index) => ({
+    id: item.id,
+    fileName: item.fileName,
+    photoData: item.photoData,
+    sortOrder: index + 1,
+  }))
+}
+
+async function handlePhotoSelection(event) {
+  const input = event.target
+  const files = Array.from(input.files ?? [])
+  input.value = ''
+
+  if (!files.length) {
+    return
+  }
+
+  const remainingCount = MAX_PHOTO_COUNT - workOrderPhotos.value.length
+
+  if (remainingCount <= 0) {
+    setFeedback(`维修现场照片最多上传 ${MAX_PHOTO_COUNT} 张。`, 'error')
+    return
+  }
+
+  if (files.length > remainingCount) {
+    setFeedback(`超出数量上限，仅会保留前 ${remainingCount} 张新照片。`, 'info')
+  }
+
+  isProcessingPhotos.value = true
+
+  try {
+    const newPhotos = []
+
+    for (const file of files.slice(0, remainingCount)) {
+      newPhotos.push(await compressPhoto(file))
+    }
+
+    workOrderPhotos.value.push(...newPhotos)
+  } catch (error) {
+    setFeedback(error instanceof Error ? error.message : '处理照片失败，请重试。', 'error')
+  } finally {
+    isProcessingPhotos.value = false
+  }
+}
+
+function removePhoto(index) {
+  workOrderPhotos.value.splice(index, 1)
 }
 
 function openSparePartModal() {
@@ -228,26 +348,28 @@ async function submitConfirmation() {
   const result = await workOrderStore.confirmWorkOrder(String(route.params.workOrderId ?? ''), {
     confirmedAt: confirmForm.confirmedAt,
     spareParts: buildSparePartPayload(),
+    photos: buildPhotoPayload(),
   })
   isConfirming.value = false
   setFeedback(result.message, result.ok ? 'success' : 'error')
 
   if (result.ok) {
-    syncSparePartsForm()
+    syncWorkOrderForms()
     closeConfirmModal()
   }
 }
 
-async function submitSpareParts() {
+async function saveWorkOrder() {
   isSavingSpareParts.value = true
   const result = await workOrderStore.saveSpareParts(String(route.params.workOrderId ?? ''), {
     spareParts: buildSparePartPayload(),
+    photos: buildPhotoPayload(),
   })
   isSavingSpareParts.value = false
   setFeedback(result.message, result.ok ? 'success' : 'error')
 
   if (result.ok) {
-    syncSparePartsForm()
+    syncWorkOrderForms()
   }
 }
 
@@ -268,7 +390,7 @@ async function loadWorkOrder() {
     return
   }
 
-  syncSparePartsForm()
+  syncWorkOrderForms()
 }
 
 onMounted(loadWorkOrder)
@@ -307,6 +429,9 @@ onMounted(loadWorkOrder)
             <h3 class="section-title">{{ workOrder.orderNumber }}</h3>
           </div>
           <div class="action-row">
+            <button class="button button-success" type="button" :disabled="isConfirmed || isSavingSpareParts" @click="saveWorkOrder">
+              {{ isSavingSpareParts ? '保存中...' : '保存工单' }}
+            </button>
             <button class="button" type="button" :disabled="!workOrder.canConfirm" @click="openConfirmModal">确认工单</button>
             <button class="button button-danger" type="button" :disabled="!workOrder.canDelete" @click="removeWorkOrder">
               删除工单
@@ -383,17 +508,52 @@ onMounted(loadWorkOrder)
       <section class="surface-card section-card">
         <div class="section-headline">
           <div>
+            <p class="kicker">Work Order Photos</p>
+            <h3 class="section-title">维修现场照片</h3>
+          </div>
+          <label
+            class="button button-ghost photo-upload-trigger"
+            :class="{ 'is-disabled': isConfirmed || isProcessingPhotos || workOrderPhotos.length >= MAX_PHOTO_COUNT }"
+          >
+            <input
+              class="photo-upload-input"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              :disabled="isConfirmed || isProcessingPhotos || workOrderPhotos.length >= MAX_PHOTO_COUNT"
+              @change="handlePhotoSelection"
+            />
+            {{ isProcessingPhotos ? '处理中...' : '拍照上传照片' }}
+          </label>
+        </div>
+
+        <p class="photo-field__hint">支持手机拍照上传，照片会在保存工单或确认工单时一并保存，最多 {{ MAX_PHOTO_COUNT }} 张。</p>
+
+        <div v-if="!workOrderPhotos.length" class="photo-empty-state">当前还没有上传维修现场照片。</div>
+
+        <div v-else class="photo-grid">
+          <article v-for="(photo, index) in workOrderPhotos" :key="photo.id || `${photo.fileName}-${index}`" class="photo-card">
+            <img class="photo-card__image" :src="photo.photoData" :alt="photo.fileName || `维修现场照片 ${index + 1}`" />
+            <div class="photo-card__footer">
+              <span class="photo-card__name">{{ photo.fileName || `维修现场照片 ${index + 1}` }}</span>
+              <button class="button button-danger" type="button" :disabled="isConfirmed" @click="removePhoto(index)">
+                删除
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="surface-card section-card">
+        <div class="section-headline">
+          <div>
             <p class="kicker">Spare Parts</p>
             <h3 class="section-title">备件消耗清单</h3>
           </div>
-          <div class="action-row">
-            <button class="button button-ghost" type="button" :disabled="isConfirmed || !selectableSpareParts.length" @click="openSparePartModal">
-              新增备件
-            </button>
-            <button class="button button-success" type="button" :disabled="isConfirmed || isSavingSpareParts" @click="submitSpareParts">
-              {{ isSavingSpareParts ? '保存中...' : '保存备件清单' }}
-            </button>
-          </div>
+          <button class="button button-ghost" type="button" :disabled="isConfirmed || !selectableSpareParts.length" @click="openSparePartModal">
+            新增备件
+          </button>
         </div>
 
         <div v-if="!sparePartsForm.length" class="empty-state">当前维修工单没有备件，请从上方下拉框新增。</div>
@@ -836,6 +996,78 @@ onMounted(loadWorkOrder)
   place-items: center;
 }
 
+.photo-upload-trigger {
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-upload-trigger.is-disabled {
+  pointer-events: none;
+}
+
+.photo-upload-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.photo-field__hint {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.82rem;
+}
+
+.photo-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-soft);
+  background: #f6f8fa;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.photo-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.photo-card__image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(208, 215, 222, 0.6);
+  background: #f6f8fa;
+}
+
+.photo-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.photo-card__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+}
+
 select,
 input {
   width: 100%;
@@ -868,7 +1100,8 @@ label > span {
 @media (max-width: 900px) {
   .section-headline,
   .entity-card__header,
-  .modal-actions {
+  .modal-actions,
+  .photo-card__footer {
     flex-direction: column;
     align-items: flex-start;
   }

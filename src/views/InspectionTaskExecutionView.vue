@@ -39,12 +39,69 @@ const inspectionTaskStore = useInspectionTaskStore()
 const toastStore = useMessageToastStore()
 const isSaving = ref(false)
 const isCompleting = ref(false)
+const isProcessingPhotos = ref(false)
+
+const MAX_PHOTO_COUNT = 6
+const MAX_PHOTO_DIMENSION = 1600
+const MAX_PHOTO_DATA_LENGTH = 1_800_000
 
 const executionForm = reactive({
   faultCodeId: '',
   faultNote: '',
   results: [],
+  photos: [],
 })
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result ?? ''))
+    reader.onerror = () => reject(new Error('读取照片失败，请重试。'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('照片解析失败，请重新拍摄。'))
+    image.src = dataUrl
+  })
+}
+
+async function compressPhoto(file) {
+  const dataUrl = await readFileAsDataUrl(file)
+  const image = await loadImage(dataUrl)
+  const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(image.width, image.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(image.width * scale))
+  canvas.height = Math.max(1, Math.round(image.height * scale))
+
+  const context = canvas.getContext('2d')
+
+  if (!context) {
+    throw new Error('无法处理照片，请更换浏览器后重试。')
+  }
+
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
+  const compressed = canvas.toDataURL('image/jpeg', 0.82)
+
+  if (!compressed.startsWith('data:image/')) {
+    throw new Error('照片压缩失败，请重试。')
+  }
+
+  if (compressed.length > MAX_PHOTO_DATA_LENGTH) {
+    throw new Error('单张照片体积仍然过大，请重新拍摄更清晰但更近距离的照片。')
+  }
+
+  const normalizedName = file.name && file.name.trim() ? file.name.replace(/\.[^.]+$/, '') : `inspection-photo-${Date.now()}`
+
+  return {
+    fileName: `${normalizedName}.jpg`,
+    photoData: compressed,
+  }
+}
 
 function getTaskStatusClass(status) {
   return {
@@ -67,6 +124,52 @@ function applyTask(task) {
     description: item.description,
     resultStatus: item.resultStatus,
   }))
+  executionForm.photos = (task.inspectionPhotos ?? []).map((item) => ({
+    id: item.id,
+    fileName: item.fileName,
+    photoData: item.photoData,
+  }))
+}
+
+async function handlePhotoSelection(event) {
+  const input = event.target
+  const files = Array.from(input.files ?? [])
+  input.value = ''
+
+  if (!files.length) {
+    return
+  }
+
+  const remainingCount = MAX_PHOTO_COUNT - executionForm.photos.length
+
+  if (remainingCount <= 0) {
+    setFeedback(`现场照片最多上传 ${MAX_PHOTO_COUNT} 张。`, 'error')
+    return
+  }
+
+  if (files.length > remainingCount) {
+    setFeedback(`超出数量上限，仅会保留前 ${remainingCount} 张新照片。`, 'info')
+  }
+
+  isProcessingPhotos.value = true
+
+  try {
+    const newPhotos = []
+
+    for (const file of files.slice(0, remainingCount)) {
+      newPhotos.push(await compressPhoto(file))
+    }
+
+    executionForm.photos.push(...newPhotos)
+  } catch (error) {
+    setFeedback(error instanceof Error ? error.message : '处理照片失败，请重试。', 'error')
+  } finally {
+    isProcessingPhotos.value = false
+  }
+}
+
+function removePhoto(index) {
+  executionForm.photos.splice(index, 1)
 }
 
 async function loadTask() {
@@ -86,6 +189,11 @@ async function saveExecution() {
     faultCodeId: executionForm.faultCodeId,
     faultNote: executionForm.faultNote,
     results: executionForm.results,
+    photos: executionForm.photos.map((item, index) => ({
+      fileName: item.fileName,
+      photoData: item.photoData,
+      sortOrder: index + 1,
+    })),
   })
   isSaving.value = false
   setFeedback(result.message, result.ok ? 'success' : 'error')
@@ -232,6 +340,49 @@ onMounted(loadTask)
           </article>
         </div>
 
+        <div class="photo-field">
+          <div class="photo-field__header">
+            <div>
+              <span class="photo-field__label">现场照片</span>
+              <p class="photo-field__hint">支持手机拍照上传，照片将自动压缩后保存，最多 {{ MAX_PHOTO_COUNT }} 张。</p>
+            </div>
+            <label
+              class="button button-ghost photo-upload-trigger"
+              :class="{ 'is-disabled': inspectionTaskStore.activeTask.status === '已完成' || isProcessingPhotos || executionForm.photos.length >= MAX_PHOTO_COUNT }"
+            >
+              <input
+                class="photo-upload-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                :disabled="inspectionTaskStore.activeTask.status === '已完成' || isProcessingPhotos || executionForm.photos.length >= MAX_PHOTO_COUNT"
+                @change="handlePhotoSelection"
+              />
+              {{ isProcessingPhotos ? '处理中...' : '拍照上传照片' }}
+            </label>
+          </div>
+
+          <div v-if="!executionForm.photos.length" class="photo-empty-state">当前还没有上传现场照片。</div>
+
+          <div v-else class="photo-grid">
+            <article v-for="(photo, index) in executionForm.photos" :key="photo.id || `${photo.fileName}-${index}`" class="photo-card">
+              <img class="photo-card__image" :src="photo.photoData" :alt="photo.fileName || `现场照片 ${index + 1}`" />
+              <div class="photo-card__footer">
+                <span class="photo-card__name">{{ photo.fileName || `现场照片 ${index + 1}` }}</span>
+                <button
+                  class="button button-danger"
+                  type="button"
+                  :disabled="inspectionTaskStore.activeTask.status === '已完成'"
+                  @click="removePhoto(index)"
+                >
+                  删除
+                </button>
+              </div>
+            </article>
+          </div>
+        </div>
+
         <div class="fault-info-field">
           <span>故障信息</span>
           <select v-model="executionForm.faultCodeId" :disabled="inspectionTaskStore.activeTask.status === '已完成'">
@@ -365,6 +516,96 @@ onMounted(loadTask)
   gap: 6px;
 }
 
+.photo-field {
+  display: grid;
+  gap: 12px;
+}
+
+.photo-field__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.photo-field__label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.photo-field__hint {
+  margin: 4px 0 0;
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+}
+
+.photo-upload-trigger {
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-upload-trigger.is-disabled {
+  pointer-events: none;
+}
+
+.photo-upload-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.photo-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-soft);
+  background: #f6f8fa;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.photo-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.photo-card__image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(208, 215, 222, 0.6);
+  background: #f6f8fa;
+}
+
+.photo-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.photo-card__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+}
+
 .fault-info-field > span {
   font-size: 0.86rem;
   font-weight: 600;
@@ -405,7 +646,9 @@ select:focus {
 
 @media (max-width: 900px) {
   .section-headline,
-  .result-card__header {
+  .result-card__header,
+  .photo-field__header,
+  .photo-card__footer {
     flex-direction: column;
     align-items: flex-start;
   }

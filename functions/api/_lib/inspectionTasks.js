@@ -201,7 +201,46 @@ async function loadInspectionTaskResults(env, taskIds) {
   )
 }
 
-function buildTaskPayloads(taskRows, equipmentOptions, inspectorOptions, faultCodes, resultLookup, currentUserId) {
+async function loadInspectionTaskPhotos(env, taskIds) {
+  if (!taskIds.length) {
+    return {}
+  }
+
+  const rows = (
+    await env.DB.prepare(
+      `SELECT inspection_task_photos.id,
+              inspection_task_photos.task_id,
+              inspection_task_photos.file_name,
+              inspection_task_photos.photo_data,
+              inspection_task_photos.sort_order,
+              inspection_task_photos.created_at
+       FROM inspection_task_photos
+       WHERE inspection_task_photos.task_id IN (${buildPlaceholders(taskIds)})
+       ORDER BY inspection_task_photos.task_id ASC,
+                inspection_task_photos.sort_order ASC,
+                inspection_task_photos.created_at ASC`,
+    )
+      .bind(...taskIds)
+      .all()
+  ).results ?? []
+
+  const grouped = groupRows(rows, 'task_id')
+
+  return Object.fromEntries(
+    Object.entries(grouped).map(([taskId, taskRows]) => [
+      taskId,
+      taskRows.map((row) => ({
+        id: row.id,
+        fileName: row.file_name || '',
+        photoData: row.photo_data,
+        sortOrder: Number(row.sort_order ?? 0),
+        createdAt: row.created_at,
+      })),
+    ]),
+  )
+}
+
+function buildTaskPayloads(taskRows, equipmentOptions, inspectorOptions, faultCodes, resultLookup, currentUserId, photoLookup = {}) {
   const equipmentMap = Object.fromEntries(equipmentOptions.map((equipment) => [equipment.id, equipment]))
   const inspectorMap = Object.fromEntries(inspectorOptions.map((inspector) => [inspector.id, inspector]))
   const faultCodeMap = Object.fromEntries(faultCodes.map((faultCode) => [faultCode.id, faultCode]))
@@ -209,6 +248,7 @@ function buildTaskPayloads(taskRows, equipmentOptions, inspectorOptions, faultCo
   return taskRows.map((row) => {
     const equipment = equipmentMap[row.equipment_id] ?? null
     const inspectionResults = resultLookup[row.id] ?? []
+    const inspectionPhotos = photoLookup[row.id] ?? []
     const canComplete =
       row.status !== '已完成' &&
       currentUserId &&
@@ -229,6 +269,8 @@ function buildTaskPayloads(taskRows, equipmentOptions, inspectorOptions, faultCo
       equipment,
       inspector: inspectorMap[row.inspector_user_id] ?? null,
       faultCode: row.fault_code_id ? faultCodeMap[row.fault_code_id] ?? null : null,
+      inspectionPhotos,
+      photoCount: inspectionPhotos.length,
       inspectionResults,
       inspectionItemCount: inspectionResults.length,
       abnormalCount: inspectionResults.filter((item) => item.resultStatus === '异常').length,
@@ -272,7 +314,10 @@ export async function buildInspectionTaskDetailPayload(env, taskId, currentUserI
     return null
   }
 
-  const resultLookup = await loadInspectionTaskResults(env, [taskId])
+  const [resultLookup, photoLookup] = await Promise.all([
+    loadInspectionTaskResults(env, [taskId]),
+    loadInspectionTaskPhotos(env, [taskId]),
+  ])
 
   return {
     equipmentOptions,
@@ -281,7 +326,15 @@ export async function buildInspectionTaskDetailPayload(env, taskId, currentUserI
     priorityOptions: TASK_PRIORITY_OPTIONS,
     statusOptions: EDITABLE_TASK_STATUS_OPTIONS,
     resultStatusOptions: TASK_RESULT_STATUS_OPTIONS,
-    task: buildTaskPayloads(taskRows, equipmentOptions, inspectorOptions, faultCodes, resultLookup, currentUserId)[0],
+    task: buildTaskPayloads(
+      taskRows,
+      equipmentOptions,
+      inspectorOptions,
+      faultCodes,
+      resultLookup,
+      currentUserId,
+      photoLookup,
+    )[0],
   }
 }
 

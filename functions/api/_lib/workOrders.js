@@ -4,6 +4,8 @@ import { TASK_PRIORITY_OPTIONS, normalizeTaskPriority } from './inspectionTasks'
 export const WORK_ORDER_TASK_STATUS_OPTIONS = ['进行中', '完成', '待验收', '取消']
 
 const TERMINAL_TASK_STATUSES = new Set(['完成', '取消'])
+const MAX_WORK_ORDER_PHOTO_COUNT = 6
+const MAX_WORK_ORDER_PHOTO_DATA_LENGTH = 1_800_000
 
 function buildPlaceholders(ids) {
   return ids.map((_, index) => `?${index + 1}`).join(', ')
@@ -408,6 +410,45 @@ async function loadWorkOrderTaskRows(env, workOrderIds) {
   )
 }
 
+async function loadWorkOrderPhotos(env, workOrderIds) {
+  if (!workOrderIds.length) {
+    return {}
+  }
+
+  const rows = (
+    await env.DB.prepare(
+      `SELECT work_order_photos.id,
+              work_order_photos.work_order_id,
+              work_order_photos.file_name,
+              work_order_photos.photo_data,
+              work_order_photos.sort_order,
+              work_order_photos.created_at
+       FROM work_order_photos
+       WHERE work_order_photos.work_order_id IN (${buildPlaceholders(workOrderIds)})
+       ORDER BY work_order_photos.work_order_id ASC,
+                work_order_photos.sort_order ASC,
+                work_order_photos.created_at ASC`,
+    )
+      .bind(...workOrderIds)
+      .all()
+  ).results ?? []
+
+  const grouped = groupRows(rows, 'work_order_id')
+
+  return Object.fromEntries(
+    Object.entries(grouped).map(([workOrderId, photoRows]) => [
+      workOrderId,
+      photoRows.map((row) => ({
+        id: row.id,
+        fileName: row.file_name || '',
+        photoData: row.photo_data,
+        sortOrder: Number(row.sort_order ?? 0),
+        createdAt: row.created_at,
+      })),
+    ]),
+  )
+}
+
 function buildWorkOrderPayloads(
   workOrderRows,
   equipmentOptions,
@@ -567,7 +608,7 @@ export async function buildWorkOrderDetailPayload(env, workOrderId) {
     return null
   }
 
-  const [taskLookup, sourceTaskLookup, equipmentSparePartLookup, savedSparePartLookup] = await Promise.all([
+  const [taskLookup, sourceTaskLookup, equipmentSparePartLookup, savedSparePartLookup, photoLookup] = await Promise.all([
     loadWorkOrderTaskRows(env, [workOrderId]),
     loadInspectionTaskSummaries(
       env,
@@ -578,6 +619,7 @@ export async function buildWorkOrderDetailPayload(env, workOrderId) {
       [...new Set(workOrderRows.map((row) => row.equipment_id).filter(Boolean))],
     ),
     loadWorkOrderSparePartRows(env, [workOrderId]),
+    loadWorkOrderPhotos(env, [workOrderId]),
   ])
   const sparePartLookup = buildWorkOrderSparePartLookup(
     workOrderRows,
@@ -585,6 +627,17 @@ export async function buildWorkOrderDetailPayload(env, workOrderId) {
     equipmentSparePartLookup,
     savedSparePartLookup,
   )
+  const workOrder = buildWorkOrderPayloads(
+    workOrderRows,
+    equipmentOptions,
+    creatorOptions,
+    engineerOptions,
+    faultCodes,
+    sourceTaskLookup,
+    taskLookup,
+    sparePartLookup,
+  )[0]
+  const photos = photoLookup[workOrderId] ?? []
 
   return {
     equipmentOptions,
@@ -594,16 +647,11 @@ export async function buildWorkOrderDetailPayload(env, workOrderId) {
     sparePartOptions,
     priorityOptions: TASK_PRIORITY_OPTIONS,
     taskStatusOptions: WORK_ORDER_TASK_STATUS_OPTIONS,
-    workOrder: buildWorkOrderPayloads(
-      workOrderRows,
-      equipmentOptions,
-      creatorOptions,
-      engineerOptions,
-      faultCodes,
-      sourceTaskLookup,
-      taskLookup,
-      sparePartLookup,
-    )[0],
+    workOrder: {
+      ...workOrder,
+      photos,
+      photoCount: photos.length,
+    },
   }
 }
 
@@ -752,6 +800,37 @@ export async function validateWorkOrderSparePartSelections(env, workOrderId, ite
   }
 }
 
+export function normalizeWorkOrderPhotoList(value) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .slice(0, MAX_WORK_ORDER_PHOTO_COUNT)
+    .map((item, index) => ({
+      id: normalizeOptionalText(item?.id),
+      fileName: normalizeOptionalText(item?.fileName) || `work-order-photo-${index + 1}.jpg`,
+      photoData: normalizeOptionalText(item?.photoData) || '',
+      sortOrder: index + 1,
+    }))
+}
+
+export function validateWorkOrderPhotoList(photos) {
+  if (photos.length > MAX_WORK_ORDER_PHOTO_COUNT) {
+    return { ok: false, message: `维修现场照片最多上传 ${MAX_WORK_ORDER_PHOTO_COUNT} 张。` }
+  }
+
+  if (photos.some((item) => !item.photoData || !item.photoData.startsWith('data:image/'))) {
+    return { ok: false, message: '仅支持上传图片文件。' }
+  }
+
+  if (photos.some((item) => item.photoData.length > MAX_WORK_ORDER_PHOTO_DATA_LENGTH)) {
+    return { ok: false, message: '单张照片过大，请压缩后再上传。' }
+  }
+
+  return { ok: true }
+}
+
 export async function loadPersistedWorkOrderSpareParts(env, workOrderId) {
   const rows = (
     await env.DB.prepare(
@@ -797,6 +876,61 @@ export async function replaceWorkOrderSpareParts(env, workOrderId, items) {
         `INSERT INTO work_order_spare_parts (work_order_id, spare_part_id, required_quantity, updated_at)
          VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP)`,
       ).bind(workOrderId, item.sparePartId, item.requiredQuantity),
+    )
+  })
+
+  await env.DB.batch(statements)
+}
+
+export async function replaceWorkOrderPhotos(env, workOrderId, photos) {
+  const statements = [
+    env.DB.prepare('DELETE FROM work_order_photos WHERE work_order_id = ?1').bind(workOrderId),
+    env.DB.prepare(
+      `UPDATE work_orders
+       SET updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?1`,
+    ).bind(workOrderId),
+  ]
+
+  photos.forEach((photo) => {
+    statements.push(
+      env.DB.prepare(
+        `INSERT INTO work_order_photos (id, work_order_id, file_name, photo_data, sort_order, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, CURRENT_TIMESTAMP)`,
+      ).bind(photo.id || crypto.randomUUID(), workOrderId, photo.fileName, photo.photoData, photo.sortOrder),
+    )
+  })
+
+  await env.DB.batch(statements)
+}
+
+export async function replaceWorkOrderProcessingData(env, workOrderId, items, photos) {
+  const statements = [
+    env.DB.prepare('DELETE FROM work_order_spare_parts WHERE work_order_id = ?1').bind(workOrderId),
+    env.DB.prepare('DELETE FROM work_order_photos WHERE work_order_id = ?1').bind(workOrderId),
+    env.DB.prepare(
+      `UPDATE work_orders
+       SET spare_parts_updated_at = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?1`,
+    ).bind(workOrderId),
+  ]
+
+  items.forEach((item) => {
+    statements.push(
+      env.DB.prepare(
+        `INSERT INTO work_order_spare_parts (work_order_id, spare_part_id, required_quantity, updated_at)
+         VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP)`,
+      ).bind(workOrderId, item.sparePartId, item.requiredQuantity),
+    )
+  })
+
+  photos.forEach((photo) => {
+    statements.push(
+      env.DB.prepare(
+        `INSERT INTO work_order_photos (id, work_order_id, file_name, photo_data, sort_order, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, CURRENT_TIMESTAMP)`,
+      ).bind(photo.id || crypto.randomUUID(), workOrderId, photo.fileName, photo.photoData, photo.sortOrder),
     )
   })
 

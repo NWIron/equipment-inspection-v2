@@ -1,7 +1,9 @@
 import { requireFeatureAccess } from '../../_lib/access'
 import {
   buildWorkOrderMutationPayload,
-  replaceWorkOrderSpareParts,
+  normalizeWorkOrderPhotoList,
+  replaceWorkOrderProcessingData,
+  validateWorkOrderPhotoList,
   validateWorkOrderSparePartSelections,
 } from '../../_lib/workOrders'
 import { failure, readJson, success } from '../../_lib/http'
@@ -18,15 +20,22 @@ export async function onRequestPut({ env, request, params }) {
   const workOrderId = normalizeText(params.id)
   const body = await readJson(request)
   const references = await validateWorkOrderSparePartSelections(env, workOrderId, body?.spareParts)
+  const photos = normalizeWorkOrderPhotoList(body?.photos)
 
   if (!references.ok) {
     return failure(references.message, references.status ?? 400)
   }
 
-  await replaceWorkOrderSpareParts(env, workOrderId, references.items)
+  const photoValidation = validateWorkOrderPhotoList(photos)
+
+  if (!photoValidation.ok) {
+    return failure(photoValidation.message)
+  }
+
+  await replaceWorkOrderProcessingData(env, workOrderId, references.items, photos)
 
   return success({
     ...(await buildWorkOrderMutationPayload(env, workOrderId, guard.session.userId)),
-    message: '维修备件清单已保存。',
+    message: '维修工单信息已保存。',
   })
 }

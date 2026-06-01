@@ -1,10 +1,12 @@
 PRAGMA foreign_keys = ON;
 
+DROP TABLE IF EXISTS work_order_photos;
 DROP TABLE IF EXISTS work_order_spare_parts;
 DROP TABLE IF EXISTS work_order_tasks;
 DROP TABLE IF EXISTS work_orders;
 DROP TABLE IF EXISTS equipment_spare_parts;
 DROP TABLE IF EXISTS spare_parts;
+DROP TABLE IF EXISTS inspection_task_photos;
 DROP TABLE IF EXISTS inspection_task_results;
 DROP TABLE IF EXISTS inspection_tasks;
 
@@ -180,6 +182,17 @@ CREATE TABLE IF NOT EXISTS inspection_task_results (
   FOREIGN KEY (inspection_item_id) REFERENCES inspection_items(id) ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS inspection_task_photos (
+  id TEXT PRIMARY KEY,
+  task_id TEXT NOT NULL,
+  file_name TEXT NOT NULL DEFAULT '',
+  photo_data TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (task_id) REFERENCES inspection_tasks(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS work_orders (
   id TEXT PRIMARY KEY,
   order_number TEXT NOT NULL UNIQUE,
@@ -197,6 +210,17 @@ CREATE TABLE IF NOT EXISTS work_orders (
   FOREIGN KEY (equipment_id) REFERENCES equipment_assets(id) ON DELETE CASCADE,
   FOREIGN KEY (fault_code_id) REFERENCES fault_codes(id) ON DELETE SET NULL,
   FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS work_order_photos (
+  id TEXT PRIMARY KEY,
+  work_order_id TEXT NOT NULL,
+  file_name TEXT NOT NULL DEFAULT '',
+  photo_data TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (work_order_id) REFERENCES work_orders(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS work_order_spare_parts (
@@ -233,18 +257,22 @@ CREATE INDEX IF NOT EXISTS idx_inspection_tasks_equipment_id ON inspection_tasks
 CREATE INDEX IF NOT EXISTS idx_inspection_tasks_inspector_user_id ON inspection_tasks(inspector_user_id);
 CREATE INDEX IF NOT EXISTS idx_inspection_tasks_status ON inspection_tasks(status);
 CREATE INDEX IF NOT EXISTS idx_inspection_tasks_task_number ON inspection_tasks(task_number);
+CREATE INDEX IF NOT EXISTS idx_inspection_task_photos_task_id ON inspection_task_photos(task_id);
 CREATE INDEX IF NOT EXISTS idx_work_orders_equipment_id ON work_orders(equipment_id);
 CREATE INDEX IF NOT EXISTS idx_work_orders_created_by_user_id ON work_orders(created_by_user_id);
 CREATE INDEX IF NOT EXISTS idx_work_orders_fault_code_id ON work_orders(fault_code_id);
 CREATE INDEX IF NOT EXISTS idx_work_orders_source_inspection_task_id ON work_orders(source_inspection_task_id);
+CREATE INDEX IF NOT EXISTS idx_work_order_photos_work_order_id ON work_order_photos(work_order_id);
 CREATE INDEX IF NOT EXISTS idx_work_order_spare_parts_spare_part_id ON work_order_spare_parts(spare_part_id);
 CREATE INDEX IF NOT EXISTS idx_work_order_tasks_work_order_id ON work_order_tasks(work_order_id);
 CREATE INDEX IF NOT EXISTS idx_work_order_tasks_engineer_user_id ON work_order_tasks(engineer_user_id);
 
 DELETE FROM auth_sessions;
+DELETE FROM work_order_photos;
 DELETE FROM work_order_spare_parts;
 DELETE FROM work_order_tasks;
 DELETE FROM work_orders;
+DELETE FROM inspection_task_photos;
 DELETE FROM inspection_task_results;
 DELETE FROM inspection_tasks;
 DELETE FROM equipment_task_lists;

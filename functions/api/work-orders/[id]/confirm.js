@@ -3,6 +3,8 @@ import {
   buildWorkOrderDetailPayload,
   buildWorkOrderMutationPayload,
   loadPersistedWorkOrderSpareParts,
+  normalizeWorkOrderPhotoList,
+  validateWorkOrderPhotoList,
   validateWorkOrderSparePartSelections,
 } from '../../_lib/workOrders'
 import { failure, readJson, success } from '../../_lib/http'
@@ -33,9 +35,16 @@ export async function onRequestPost({ env, request, params }) {
 
   const body = await readJson(request)
   const confirmedAt = normalizeOptionalText(body?.confirmedAt)
+  const photos = normalizeWorkOrderPhotoList(body?.photos)
 
   if (!confirmedAt) {
     return failure('请填写维修工单确认时间。')
+  }
+
+  const photoValidation = validateWorkOrderPhotoList(photos)
+
+  if (!photoValidation.ok) {
+    return failure(photoValidation.message)
   }
 
   let normalizedSpareParts = null
@@ -69,6 +78,7 @@ export async function onRequestPost({ env, request, params }) {
     ...(normalizedSpareParts
       ? [env.DB.prepare('DELETE FROM work_order_spare_parts WHERE work_order_id = ?1').bind(workOrderId)]
       : []),
+    env.DB.prepare('DELETE FROM work_order_photos WHERE work_order_id = ?1').bind(workOrderId),
     ...(normalizedSpareParts
       ? normalizedSpareParts.map((sparePart) =>
           env.DB.prepare(
@@ -77,6 +87,12 @@ export async function onRequestPost({ env, request, params }) {
           ).bind(workOrderId, sparePart.sparePartId, sparePart.requiredQuantity),
         )
       : []),
+    ...photos.map((photo) =>
+      env.DB.prepare(
+        `INSERT INTO work_order_photos (id, work_order_id, file_name, photo_data, sort_order, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, CURRENT_TIMESTAMP)`,
+      ).bind(photo.id || crypto.randomUUID(), workOrderId, photo.fileName, photo.photoData, photo.sortOrder),
+    ),
     ...sparePartsToDeduct.map((sparePart) =>
       env.DB.prepare(
         `UPDATE spare_parts
