@@ -30,6 +30,16 @@ export const FEATURE_CATALOG = [
     path: '/modules/work-orders',
   },
   {
+    id: 'data-analysis',
+    title: '数据分析',
+    summary: '汇总点检、维修与设备数据，支持后续分析看板扩展。',
+    category: 'Analytics',
+    shortLabel: 'DA',
+    accent: 'slate',
+    phaseLabel: '规划中',
+    path: '/modules/data-analysis',
+  },
+  {
     id: 'access-management',
     title: '用户与权限管理',
     summary: '维护用户主数据、角色与功能卡片授权关系。',

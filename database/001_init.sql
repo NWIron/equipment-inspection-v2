@@ -294,7 +294,8 @@ VALUES
   ('equipment', '设备管理', '维护设备台账、位置、状态与生命周期信息。', 'Asset', '/modules/equipment', 10),
   ('inspection-tasks', '点检任务', '编排点检计划、执行清单与异常闭环任务。', 'Inspection', '/modules/inspection-tasks', 20),
   ('work-orders', '维修工单', '管理报修、派工、维修记录与状态跟踪。', 'Maintenance', '/modules/work-orders', 30),
-  ('access-management', '用户与权限管理', '维护用户主数据、角色与功能卡片授权关系。', 'Security', '/admin/access', 40);
+  ('data-analysis', '数据分析', '汇总点检、维修与设备数据，支持后续分析看板扩展。', 'Analytics', '/modules/data-analysis', 40),
+  ('access-management', '用户与权限管理', '维护用户主数据、角色与功能卡片授权关系。', 'Security', '/admin/access', 50);
 
 INSERT OR REPLACE INTO roles (id, name, description, is_system)
 VALUES
@@ -307,6 +308,7 @@ VALUES
   ('role-administrator', 'equipment'),
   ('role-administrator', 'inspection-tasks'),
   ('role-administrator', 'work-orders'),
+  ('role-administrator', 'data-analysis'),
   ('role-administrator', 'access-management'),
   ('role-inspector', 'inspection-tasks'),
   ('role-equipment-engineer', 'equipment'),

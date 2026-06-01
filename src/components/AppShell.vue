@@ -105,6 +105,10 @@ async function handleLogout() {
     <main class="shell-main">
       <RouterView />
     </main>
+
+    <footer class="shell-footer">
+      <p class="shell-footer__copy">© 2026 METTLER TOLEDO, Inc.</p>
+    </footer>
   </div>
 </template>
 
@@ -235,7 +239,19 @@ async function handleLogout() {
 }
 
 .shell-main {
+  flex: 1;
   padding: 16px 18px 18px;
+}
+
+.shell-footer {
+  padding: 0 18px 18px;
+}
+
+.shell-footer__copy {
+  margin: 0;
+  color: #5f6b7a;
+  font-size: 0.78rem;
+  text-align: center;
 }
 
 @media (max-width: 980px) {
@@ -249,6 +265,10 @@ async function handleLogout() {
 
   .shell-main {
     padding: 12px;
+  }
+
+  .shell-footer {
+    padding: 0 12px 12px;
   }
 }
 
@@ -278,6 +298,10 @@ async function handleLogout() {
 
   .shell-main {
     padding: 10px;
+  }
+
+  .shell-footer {
+    padding: 0 10px 10px;
   }
 
   .shell-signout {

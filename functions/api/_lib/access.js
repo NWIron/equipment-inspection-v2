@@ -2,7 +2,27 @@ const FEATURE_SORT_ORDER = {
   equipment: 10,
   'inspection-tasks': 20,
   'work-orders': 30,
-  'access-management': 40,
+  'data-analysis': 40,
+  'access-management': 50,
+}
+
+async function ensureAccessSeedData(env) {
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO features (id, title, summary, category, path, sort_order)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
+    ).bind(
+      'data-analysis',
+      '数据分析',
+      '汇总点检、维修与设备数据，支持后续分析看板扩展。',
+      'Analytics',
+      '/modules/data-analysis',
+      40,
+    ),
+    env.DB.prepare(
+      'INSERT OR IGNORE INTO role_features (role_id, feature_id) VALUES (?1, ?2)',
+    ).bind('role-administrator', 'data-analysis'),
+  ])
 }
 
 function mapUsers(userRows, userRoleRows) {
@@ -113,6 +133,8 @@ export function buildBlankAccessPayload() {
 }
 
 export async function buildAccessPayloadForUser(env, userId) {
+  await ensureAccessSeedData(env)
+
   if (!userId) {
     return buildBlankAccessPayload()
   }
