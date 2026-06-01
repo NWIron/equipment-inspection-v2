@@ -11,6 +11,7 @@ const activeTab = ref('users')
 const isUserModalOpen = ref(false)
 const isRoleModalOpen = ref(false)
 const editingUserId = ref('')
+const editingRoleId = ref('')
 
 const userForm = reactive({
   accountName: '',
@@ -33,13 +34,22 @@ const isSavingRole = ref(false)
 const users = computed(() => accessStore.userDirectory)
 const roles = computed(() => accessStore.roles)
 const isEditingUser = computed(() => Boolean(editingUserId.value))
+const isEditingRole = computed(() => Boolean(editingRoleId.value))
 const userModalTitle = computed(() => (isEditingUser.value ? '编辑用户' : '创建用户'))
+const roleModalTitle = computed(() => (isEditingRole.value ? '编辑角色' : '创建角色'))
 const userSubmitLabel = computed(() => {
   if (isSavingUser.value) {
     return isEditingUser.value ? '保存中...' : '创建中...'
   }
 
   return isEditingUser.value ? '保存修改' : '创建用户'
+})
+const roleSubmitLabel = computed(() => {
+  if (isSavingRole.value) {
+    return isEditingRole.value ? '保存中...' : '创建中...'
+  }
+
+  return isEditingRole.value ? '保存修改' : '创建角色'
 })
 
 function openUserModal() {
@@ -65,11 +75,21 @@ function closeUserModal() {
 }
 
 function openRoleModal() {
+  editingRoleId.value = ''
+  isRoleModalOpen.value = true
+}
+
+function openRoleEditModal(role) {
+  editingRoleId.value = role.id
+  roleForm.name = role.name
+  roleForm.description = role.description || ''
+  roleForm.featureIds = [...role.featureIds]
   isRoleModalOpen.value = true
 }
 
 function closeRoleModal() {
   isRoleModalOpen.value = false
+  editingRoleId.value = ''
   resetRoleForm()
 }
 
@@ -125,7 +145,9 @@ async function removeUser(userId) {
 
 async function submitRole() {
   isSavingRole.value = true
-  const result = await accessStore.createRole(roleForm)
+  const result = isEditingRole.value
+    ? await accessStore.updateRole(editingRoleId.value, roleForm)
+    : await accessStore.createRole(roleForm)
   isSavingRole.value = false
   setRoleFeedback(result)
 
@@ -259,6 +281,9 @@ async function removeRole(roleId) {
                 <p>{{ role.description || '未填写角色说明。' }}</p>
               </div>
               <div class="action-row">
+                <button class="button button-ghost" type="button" @click="openRoleEditModal(role)">
+                  编辑
+                </button>
                 <button
                   v-if="!role.isSystem"
                   class="button button-danger"
@@ -354,7 +379,7 @@ async function removeRole(roleId) {
         <div class="section-headline modal-headline">
           <div>
             <p class="kicker">Roles</p>
-            <h3 class="section-title">创建角色</h3>
+            <h3 class="section-title">{{ roleModalTitle }}</h3>
           </div>
           <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeRoleModal">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -396,9 +421,7 @@ async function removeRole(roleId) {
 
           <div class="modal-actions">
             <button class="button button-ghost" type="button" @click="closeRoleModal">取消</button>
-            <button class="button button-success" type="submit" :disabled="isSavingRole">
-              {{ isSavingRole ? '创建中...' : '创建角色' }}
-            </button>
+            <button class="button button-success" type="submit" :disabled="isSavingRole">{{ roleSubmitLabel }}</button>
           </div>
         </form>
       </section>
