@@ -28,6 +28,7 @@ export async function onRequestPut({ env, request, params }) {
   const description = normalizeText(body?.description)
   const unit = normalizeText(body?.unit) || '件'
   const stockQuantity = parseWholeNumber(body?.stockQuantity)
+  const safetyStock = parseWholeNumber(body?.safetyStock)
   const equipmentIds = normalizeIdList(body?.equipmentIds)
 
   if (!partNumber || !description) {
@@ -36,6 +37,10 @@ export async function onRequestPut({ env, request, params }) {
 
   if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
     return failure('库存数量必须为大于或等于 0 的整数。')
+  }
+
+  if (!Number.isInteger(safetyStock) || safetyStock < 0) {
+    return failure('安全库存必须为大于或等于 0 的整数。')
   }
 
   const existing = await env.DB.prepare(
@@ -51,9 +56,9 @@ export async function onRequestPut({ env, request, params }) {
   await env.DB.batch([
     env.DB.prepare(
       `UPDATE spare_parts
-       SET part_number = ?1, description = ?2, unit = ?3, stock_quantity = ?4, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?5`,
-    ).bind(partNumber, description, unit, stockQuantity, sparePartId),
+       SET part_number = ?1, description = ?2, unit = ?3, stock_quantity = ?4, safety_stock = ?5, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?6`,
+    ).bind(partNumber, description, unit, stockQuantity, safetyStock, sparePartId),
     env.DB.prepare('DELETE FROM equipment_spare_parts WHERE spare_part_id = ?1').bind(sparePartId),
     ...equipmentIds.map((equipmentId) =>
       env.DB.prepare('INSERT INTO equipment_spare_parts (equipment_id, spare_part_id) VALUES (?1, ?2)').bind(

@@ -108,7 +108,7 @@ async function loadTaskLists(env) {
 async function loadSpareParts(env) {
   const rows = (
     await env.DB.prepare(
-      'SELECT id, part_number, description, unit, stock_quantity FROM spare_parts ORDER BY part_number ASC',
+      'SELECT id, part_number, description, unit, stock_quantity, safety_stock FROM spare_parts ORDER BY part_number ASC',
     ).all()
   ).results ?? []
 
@@ -135,6 +135,7 @@ async function loadSpareParts(env) {
     description: row.description,
     unit: row.unit,
     stockQuantity: Number(row.stock_quantity ?? 0),
+    safetyStock: Number(row.safety_stock ?? 0),
     equipmentIds: equipmentLookup[row.id] ?? [],
   }))
 }

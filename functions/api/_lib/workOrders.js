@@ -29,6 +29,18 @@ function buildDraftDateTime() {
   return new Date().toISOString().slice(0, 16)
 }
 
+function parseWholeNumber(value) {
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? value : Number.NaN
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    return /^\d+$/.test(value.trim()) ? Number.parseInt(value.trim(), 10) : Number.NaN
+  }
+
+  return Number.NaN
+}
+
 function getWorkOrderStatus(tasks, confirmedAt) {
   if (confirmedAt) {
     return '已确认'
@@ -163,6 +175,120 @@ export async function loadWorkOrderFaultCodeOptions(env) {
   }))
 }
 
+export async function loadWorkOrderSparePartOptions(env, sparePartIds = null) {
+  const hasFilter = Array.isArray(sparePartIds) && sparePartIds.length
+  const placeholders = hasFilter ? buildPlaceholders(sparePartIds) : ''
+  const query = [
+    `SELECT id, part_number, description, unit, stock_quantity
+     FROM spare_parts`,
+    hasFilter ? `WHERE id IN (${placeholders})` : '',
+    'ORDER BY part_number ASC',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const rows = (await env.DB.prepare(query).bind(...(sparePartIds ?? [])).all()).results ?? []
+
+  return rows.map((row) => ({
+    id: row.id,
+    partNumber: row.part_number,
+    description: row.description,
+    unit: row.unit,
+    stockQuantity: Number(row.stock_quantity ?? 0),
+  }))
+}
+
+async function loadEquipmentSparePartLookup(env, equipmentIds) {
+  if (!equipmentIds.length) {
+    return {}
+  }
+
+  const rows = (
+    await env.DB.prepare(
+      `SELECT equipment_id, spare_part_id
+       FROM equipment_spare_parts
+       WHERE equipment_id IN (${buildPlaceholders(equipmentIds)})
+       ORDER BY spare_part_id ASC`,
+    )
+      .bind(...equipmentIds)
+      .all()
+  ).results ?? []
+
+  return rows.reduce((lookup, row) => {
+    lookup[row.equipment_id] ??= []
+    lookup[row.equipment_id].push(row.spare_part_id)
+    return lookup
+  }, {})
+}
+
+async function loadWorkOrderSparePartRows(env, workOrderIds) {
+  if (!workOrderIds.length) {
+    return {}
+  }
+
+  const rows = (
+    await env.DB.prepare(
+      `SELECT work_order_id, spare_part_id, required_quantity, updated_at
+       FROM work_order_spare_parts
+       WHERE work_order_id IN (${buildPlaceholders(workOrderIds)})
+       ORDER BY updated_at ASC, spare_part_id ASC`,
+    )
+      .bind(...workOrderIds)
+      .all()
+  ).results ?? []
+
+  const grouped = groupRows(rows, 'work_order_id')
+
+  return Object.fromEntries(
+    Object.entries(grouped).map(([workOrderId, sparePartRows]) => [
+      workOrderId,
+      sparePartRows.map((row) => ({
+        sparePartId: row.spare_part_id,
+        requiredQuantity: Number(row.required_quantity ?? 0),
+        updatedAt: row.updated_at,
+      })),
+    ]),
+  )
+}
+
+function buildWorkOrderSparePartLookup(workOrderRows, sparePartOptions, equipmentSparePartLookup, savedSparePartLookup) {
+  const sparePartMap = Object.fromEntries(sparePartOptions.map((sparePart) => [sparePart.id, sparePart]))
+
+  return Object.fromEntries(
+    workOrderRows.map((row) => {
+      const linkedIds = equipmentSparePartLookup[row.equipment_id] ?? []
+      const savedRows = savedSparePartLookup[row.id] ?? []
+      const savedMap = Object.fromEntries(savedRows.map((item) => [item.sparePartId, item]))
+      const effectiveIds = row.spare_parts_updated_at
+        ? savedRows.map((item) => item.sparePartId)
+        : savedRows.length
+          ? [...new Set([...linkedIds, ...savedRows.map((item) => item.sparePartId)])]
+          : linkedIds
+
+      const items = effectiveIds
+        .map((sparePartId) => {
+          const sparePart = sparePartMap[sparePartId]
+
+          if (!sparePart) {
+            return null
+          }
+
+          const saved = savedMap[sparePartId]
+
+          return {
+            sparePartId,
+            ...sparePart,
+            requiredQuantity: saved?.requiredQuantity ?? 0,
+            updatedAt: saved?.updatedAt ?? null,
+          }
+        })
+        .filter(Boolean)
+
+      return [row.id, items]
+    }),
+  )
+}
+
 async function loadInspectionTaskSummaries(env, taskIds) {
   if (!taskIds.length) {
     return {}
@@ -218,6 +344,7 @@ async function loadWorkOrderRows(env, workOrderIds = null) {
             created_at,
             created_by_user_id,
             creator_contact,
+            spare_parts_updated_at,
             confirmed_at
      FROM work_orders`,
     hasFilter ? `WHERE id IN (${placeholders})` : '',
@@ -281,7 +408,16 @@ async function loadWorkOrderTaskRows(env, workOrderIds) {
   )
 }
 
-function buildWorkOrderPayloads(workOrderRows, equipmentOptions, creatorOptions, engineerOptions, faultCodes, sourceTasks, taskLookup) {
+function buildWorkOrderPayloads(
+  workOrderRows,
+  equipmentOptions,
+  creatorOptions,
+  engineerOptions,
+  faultCodes,
+  sourceTasks,
+  taskLookup,
+  sparePartLookup,
+) {
   const equipmentMap = Object.fromEntries(equipmentOptions.map((equipment) => [equipment.id, equipment]))
   const creatorMap = Object.fromEntries(creatorOptions.map((creator) => [creator.id, creator]))
   const engineerMap = Object.fromEntries(engineerOptions.map((engineer) => [engineer.id, engineer]))
@@ -310,6 +446,7 @@ function buildWorkOrderPayloads(workOrderRows, equipmentOptions, creatorOptions,
       faultCode: row.fault_code_id ? faultCodeMap[row.fault_code_id] ?? null : null,
       creator: creatorMap[row.created_by_user_id] ?? null,
       sourceInspectionTask: row.source_inspection_task_id ? sourceTasks[row.source_inspection_task_id] ?? null : null,
+      spareParts: sparePartLookup[row.id] ?? [],
       tasks,
       taskCount: tasks.length,
       finishedTaskCount: tasks.filter((task) => TERMINAL_TASK_STATUSES.has(task.status)).length,
@@ -355,6 +492,7 @@ export async function buildWorkOrderBootstrapPayload(env, currentUserId = null, 
     creatorOptions,
     engineerOptions,
     faultCodes,
+    sparePartOptions,
     workOrderRows,
     draftData,
   ] = await Promise.all([
@@ -362,17 +500,34 @@ export async function buildWorkOrderBootstrapPayload(env, currentUserId = null, 
     loadWorkOrderCreatorOptions(env),
     loadWorkOrderEngineerOptions(env),
     loadWorkOrderFaultCodeOptions(env),
+    loadWorkOrderSparePartOptions(env),
     loadWorkOrderRows(env),
     buildDraftWorkOrder(env, currentUserId, sourceTaskId),
   ])
 
-  const taskLookup = await loadWorkOrderTaskRows(
-    env,
-    workOrderRows.map((row) => row.id),
-  )
-  const sourceTaskLookup = await loadInspectionTaskSummaries(
-    env,
-    workOrderRows.map((row) => row.source_inspection_task_id).filter(Boolean),
+  const [taskLookup, sourceTaskLookup, equipmentSparePartLookup, savedSparePartLookup] = await Promise.all([
+    loadWorkOrderTaskRows(
+      env,
+      workOrderRows.map((row) => row.id),
+    ),
+    loadInspectionTaskSummaries(
+      env,
+      workOrderRows.map((row) => row.source_inspection_task_id).filter(Boolean),
+    ),
+    loadEquipmentSparePartLookup(
+      env,
+      [...new Set(workOrderRows.map((row) => row.equipment_id).filter(Boolean))],
+    ),
+    loadWorkOrderSparePartRows(
+      env,
+      workOrderRows.map((row) => row.id),
+    ),
+  ])
+  const sparePartLookup = buildWorkOrderSparePartLookup(
+    workOrderRows,
+    sparePartOptions,
+    equipmentSparePartLookup,
+    savedSparePartLookup,
   )
 
   return {
@@ -380,6 +535,7 @@ export async function buildWorkOrderBootstrapPayload(env, currentUserId = null, 
     creatorOptions,
     engineerOptions,
     faultCodes,
+    sparePartOptions,
     priorityOptions: TASK_PRIORITY_OPTIONS,
     taskStatusOptions: WORK_ORDER_TASK_STATUS_OPTIONS,
     workOrders: buildWorkOrderPayloads(
@@ -390,6 +546,7 @@ export async function buildWorkOrderBootstrapPayload(env, currentUserId = null, 
       faultCodes,
       sourceTaskLookup,
       taskLookup,
+      sparePartLookup,
     ),
     draftWorkOrder: draftData.draftWorkOrder,
     sourceTaskMissing: draftData.sourceTaskMissing,
@@ -397,22 +554,36 @@ export async function buildWorkOrderBootstrapPayload(env, currentUserId = null, 
 }
 
 export async function buildWorkOrderDetailPayload(env, workOrderId) {
-  const [workOrderRows, equipmentOptions, creatorOptions, engineerOptions, faultCodes] = await Promise.all([
+  const [workOrderRows, equipmentOptions, creatorOptions, engineerOptions, faultCodes, sparePartOptions] = await Promise.all([
     loadWorkOrderRows(env, [workOrderId]),
     loadWorkOrderEquipmentOptions(env),
     loadWorkOrderCreatorOptions(env),
     loadWorkOrderEngineerOptions(env),
     loadWorkOrderFaultCodeOptions(env),
+    loadWorkOrderSparePartOptions(env),
   ])
 
   if (!workOrderRows.length) {
     return null
   }
 
-  const taskLookup = await loadWorkOrderTaskRows(env, [workOrderId])
-  const sourceTaskLookup = await loadInspectionTaskSummaries(
-    env,
-    workOrderRows.map((row) => row.source_inspection_task_id).filter(Boolean),
+  const [taskLookup, sourceTaskLookup, equipmentSparePartLookup, savedSparePartLookup] = await Promise.all([
+    loadWorkOrderTaskRows(env, [workOrderId]),
+    loadInspectionTaskSummaries(
+      env,
+      workOrderRows.map((row) => row.source_inspection_task_id).filter(Boolean),
+    ),
+    loadEquipmentSparePartLookup(
+      env,
+      [...new Set(workOrderRows.map((row) => row.equipment_id).filter(Boolean))],
+    ),
+    loadWorkOrderSparePartRows(env, [workOrderId]),
+  ])
+  const sparePartLookup = buildWorkOrderSparePartLookup(
+    workOrderRows,
+    sparePartOptions,
+    equipmentSparePartLookup,
+    savedSparePartLookup,
   )
 
   return {
@@ -420,6 +591,7 @@ export async function buildWorkOrderDetailPayload(env, workOrderId) {
     creatorOptions,
     engineerOptions,
     faultCodes,
+    sparePartOptions,
     priorityOptions: TASK_PRIORITY_OPTIONS,
     taskStatusOptions: WORK_ORDER_TASK_STATUS_OPTIONS,
     workOrder: buildWorkOrderPayloads(
@@ -430,6 +602,7 @@ export async function buildWorkOrderDetailPayload(env, workOrderId) {
       faultCodes,
       sourceTaskLookup,
       taskLookup,
+      sparePartLookup,
     )[0],
   }
 }
@@ -514,6 +687,120 @@ export async function validateWorkOrderTaskReferences(env, workOrderId, engineer
     workOrder,
     engineer,
   }
+}
+
+export async function validateWorkOrderSparePartSelections(env, workOrderId, items) {
+  const workOrder = await env.DB.prepare('SELECT id, equipment_id, confirmed_at FROM work_orders WHERE id = ?1 LIMIT 1')
+    .bind(workOrderId)
+    .first()
+
+  if (!workOrder) {
+    return { ok: false, message: '维修工单不存在。', status: 404 }
+  }
+
+  if (workOrder.confirmed_at) {
+    return { ok: false, message: '已确认的维修工单不可再修改备件清单。' }
+  }
+
+  if (!Array.isArray(items)) {
+    return { ok: false, message: '请提交有效的备件清单。' }
+  }
+
+  const normalizedItems = []
+  const seen = new Set()
+
+  for (const item of items) {
+    const sparePartId = normalizeText(item?.sparePartId ?? item?.id)
+    const requiredQuantity = parseWholeNumber(item?.requiredQuantity)
+
+    if (!sparePartId) {
+      return { ok: false, message: '备件清单中存在未选择的备件。' }
+    }
+
+    if (seen.has(sparePartId)) {
+      return { ok: false, message: '备件清单中存在重复的备件。' }
+    }
+
+    if (!Number.isInteger(requiredQuantity) || requiredQuantity < 0) {
+      return { ok: false, message: '备件消耗数量必须为大于或等于 0 的整数。' }
+    }
+
+    seen.add(sparePartId)
+
+    if (requiredQuantity > 0) {
+      normalizedItems.push({ sparePartId, requiredQuantity })
+    }
+  }
+
+  const sparePartOptions = await loadWorkOrderSparePartOptions(
+    env,
+    normalizedItems.map((item) => item.sparePartId),
+  )
+  const sparePartMap = Object.fromEntries(sparePartOptions.map((item) => [item.id, item]))
+
+  for (const item of normalizedItems) {
+    if (!sparePartMap[item.sparePartId]) {
+      return { ok: false, message: '存在无效备件，请重新选择。' }
+    }
+  }
+
+  return {
+    ok: true,
+    workOrder,
+    items: normalizedItems,
+    sparePartMap,
+  }
+}
+
+export async function loadPersistedWorkOrderSpareParts(env, workOrderId) {
+  const rows = (
+    await env.DB.prepare(
+      `SELECT work_order_spare_parts.spare_part_id,
+              work_order_spare_parts.required_quantity,
+              spare_parts.part_number,
+              spare_parts.description,
+              spare_parts.unit,
+              spare_parts.stock_quantity
+       FROM work_order_spare_parts
+       INNER JOIN spare_parts ON spare_parts.id = work_order_spare_parts.spare_part_id
+       WHERE work_order_spare_parts.work_order_id = ?1
+       ORDER BY spare_parts.part_number ASC`,
+    )
+      .bind(workOrderId)
+      .all()
+  ).results ?? []
+
+  return rows.map((row) => ({
+    sparePartId: row.spare_part_id,
+    requiredQuantity: Number(row.required_quantity ?? 0),
+    partNumber: row.part_number,
+    description: row.description,
+    unit: row.unit,
+    stockQuantity: Number(row.stock_quantity ?? 0),
+  }))
+}
+
+export async function replaceWorkOrderSpareParts(env, workOrderId, items) {
+  const statements = [
+    env.DB.prepare('DELETE FROM work_order_spare_parts WHERE work_order_id = ?1').bind(workOrderId),
+    env.DB.prepare(
+      `UPDATE work_orders
+       SET spare_parts_updated_at = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?1`,
+    ).bind(workOrderId),
+  ]
+
+  items.forEach((item) => {
+    statements.push(
+      env.DB.prepare(
+        `INSERT INTO work_order_spare_parts (work_order_id, spare_part_id, required_quantity, updated_at)
+         VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP)`,
+      ).bind(workOrderId, item.sparePartId, item.requiredQuantity),
+    )
+  })
+
+  await env.DB.batch(statements)
 }
 
 export async function generateWorkOrderNumber(env, createdAt) {

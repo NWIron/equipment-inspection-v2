@@ -11,7 +11,9 @@ import { getSession } from '../_lib/session'
 import { normalizeText } from '../_lib/equipment'
 
 async function loadWorkOrderRecord(env, workOrderId) {
-  return env.DB.prepare('SELECT id, confirmed_at FROM work_orders WHERE id = ?1 LIMIT 1').bind(workOrderId).first()
+  return env.DB.prepare('SELECT id, equipment_id, spare_parts_updated_at, confirmed_at FROM work_orders WHERE id = ?1 LIMIT 1')
+    .bind(workOrderId)
+    .first()
 }
 
 export async function onRequestGet({ env, request, params }) {
@@ -76,8 +78,9 @@ export async function onRequestPut({ env, request, params }) {
          created_at = ?5,
          created_by_user_id = ?6,
          creator_contact = ?7,
+         spare_parts_updated_at = ?8,
          updated_at = CURRENT_TIMESTAMP
-     WHERE id = ?8`,
+     WHERE id = ?9`,
   )
     .bind(
       body.sourceInspectionTaskId,
@@ -87,9 +90,14 @@ export async function onRequestPut({ env, request, params }) {
       body.createdAt,
       body.createdByUserId,
       references.creator.contactLabel,
+      existingWorkOrder.equipment_id !== body.equipmentId ? null : existingWorkOrder.spare_parts_updated_at ?? null,
       workOrderId,
     )
     .run()
+
+  if (existingWorkOrder.equipment_id !== body.equipmentId) {
+    await env.DB.prepare('DELETE FROM work_order_spare_parts WHERE work_order_id = ?1').bind(workOrderId).run()
+  }
 
   return success({
     ...(await buildWorkOrderMutationPayload(env, workOrderId, guard.session.userId)),

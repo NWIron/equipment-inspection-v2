@@ -1,7 +1,10 @@
 PRAGMA foreign_keys = ON;
 
+DROP TABLE IF EXISTS work_order_spare_parts;
 DROP TABLE IF EXISTS work_order_tasks;
 DROP TABLE IF EXISTS work_orders;
+DROP TABLE IF EXISTS equipment_spare_parts;
+DROP TABLE IF EXISTS spare_parts;
 DROP TABLE IF EXISTS inspection_task_results;
 DROP TABLE IF EXISTS inspection_tasks;
 
@@ -104,6 +107,7 @@ CREATE TABLE IF NOT EXISTS spare_parts (
   description TEXT NOT NULL,
   unit TEXT NOT NULL DEFAULT '件',
   stock_quantity INTEGER NOT NULL DEFAULT 0,
+  safety_stock INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -186,12 +190,23 @@ CREATE TABLE IF NOT EXISTS work_orders (
   created_at TEXT NOT NULL,
   created_by_user_id TEXT NOT NULL,
   creator_contact TEXT NOT NULL DEFAULT '',
+  spare_parts_updated_at TEXT,
   confirmed_at TEXT,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (source_inspection_task_id) REFERENCES inspection_tasks(id) ON DELETE SET NULL,
   FOREIGN KEY (equipment_id) REFERENCES equipment_assets(id) ON DELETE CASCADE,
   FOREIGN KEY (fault_code_id) REFERENCES fault_codes(id) ON DELETE SET NULL,
   FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS work_order_spare_parts (
+  work_order_id TEXT NOT NULL,
+  spare_part_id TEXT NOT NULL,
+  required_quantity INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (work_order_id, spare_part_id),
+  FOREIGN KEY (work_order_id) REFERENCES work_orders(id) ON DELETE CASCADE,
+  FOREIGN KEY (spare_part_id) REFERENCES spare_parts(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS work_order_tasks (
@@ -222,10 +237,12 @@ CREATE INDEX IF NOT EXISTS idx_work_orders_equipment_id ON work_orders(equipment
 CREATE INDEX IF NOT EXISTS idx_work_orders_created_by_user_id ON work_orders(created_by_user_id);
 CREATE INDEX IF NOT EXISTS idx_work_orders_fault_code_id ON work_orders(fault_code_id);
 CREATE INDEX IF NOT EXISTS idx_work_orders_source_inspection_task_id ON work_orders(source_inspection_task_id);
+CREATE INDEX IF NOT EXISTS idx_work_order_spare_parts_spare_part_id ON work_order_spare_parts(spare_part_id);
 CREATE INDEX IF NOT EXISTS idx_work_order_tasks_work_order_id ON work_order_tasks(work_order_id);
 CREATE INDEX IF NOT EXISTS idx_work_order_tasks_engineer_user_id ON work_order_tasks(engineer_user_id);
 
 DELETE FROM auth_sessions;
+DELETE FROM work_order_spare_parts;
 DELETE FROM work_order_tasks;
 DELETE FROM work_orders;
 DELETE FROM inspection_task_results;
@@ -340,11 +357,11 @@ VALUES
   ('task-weekly-line', 'item-lubrication', 20),
   ('task-weekly-line', 'item-safety', 30);
 
-INSERT OR REPLACE INTO spare_parts (id, part_number, description, unit, stock_quantity)
+INSERT OR REPLACE INTO spare_parts (id, part_number, description, unit, stock_quantity, safety_stock)
 VALUES
-  ('spare-filter-kit', 'SP-001', '过滤组件维护包', '套', 12),
-  ('spare-sensor-head', 'SP-002', '传感器探头总成', '个', 4),
-  ('spare-fuse-pack', 'SP-003', '保险丝套装', '盒', 18);
+  ('spare-filter-kit', 'SP-001', '过滤组件维护包', '套', 12, 4),
+  ('spare-sensor-head', 'SP-002', '传感器探头总成', '个', 4, 2),
+  ('spare-fuse-pack', 'SP-003', '保险丝套装', '盒', 18, 6);
 
 INSERT OR REPLACE INTO equipment_assets (
   id,

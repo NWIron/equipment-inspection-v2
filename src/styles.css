@@ -416,6 +416,44 @@ th {
   min-width: 720px;
 }
 
+.modal-overlay {
+  padding: clamp(10px, 2.8vw, 20px) !important;
+}
+
+.modal-card {
+  max-width: calc(100vw - 20px);
+  max-height: calc(100vh - 20px);
+  overflow: auto;
+}
+
+.modal-headline.section-headline {
+  display: flex;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-headline > :first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.modal-headline .button-icon {
+  flex: 0 0 auto;
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: row !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 980px) {
   .split-layout {
     grid-template-columns: 1fr;
@@ -446,5 +484,20 @@ th {
 
   .page {
     gap: 12px;
+  }
+
+  .modal-card {
+    max-width: calc(100vw - 12px);
+    max-height: calc(100vh - 12px);
+    padding: 14px !important;
+  }
+
+  .modal-headline.section-headline {
+    align-items: flex-start !important;
+  }
+
+  .modal-headline .button-icon {
+    min-width: 36px;
+    width: 36px;
   }
 }

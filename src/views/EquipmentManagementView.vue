@@ -61,6 +61,7 @@ const sparePartForm = reactive({
   description: '',
   unit: '件',
   stockQuantity: '0',
+  safetyStock: '0',
   equipmentIds: [],
 })
 
@@ -184,6 +185,7 @@ function resetSparePartForm() {
   sparePartForm.description = ''
   sparePartForm.unit = '件'
   sparePartForm.stockQuantity = '0'
+  sparePartForm.safetyStock = '0'
   sparePartForm.equipmentIds = []
 }
 
@@ -239,9 +241,14 @@ function editSparePart(sparePart) {
   sparePartForm.description = sparePart.description
   sparePartForm.unit = sparePart.unit
   sparePartForm.stockQuantity = String(sparePart.stockQuantity)
+  sparePartForm.safetyStock = String(sparePart.safetyStock ?? 0)
   sparePartForm.equipmentIds = [...sparePart.equipmentIds]
   clearFeedback()
   isSparePartModalOpen.value = true
+}
+
+function openAutoPurchasePlaceholder() {
+  setFeedback('自动采购备件功能待开发。', 'info')
 }
 
 async function submitEquipment() {
@@ -631,7 +638,10 @@ onMounted(async () => {
               <p class="kicker">Spare Parts</p>
               <h3 class="section-title">设备备件</h3>
             </div>
-            <button class="button button-success" type="button" @click="openSparePartModal">新建备件</button>
+            <div class="action-row">
+              <button class="button button-success" type="button" @click="openSparePartModal">新建备件</button>
+              <button class="button button-ghost" type="button" @click="openAutoPurchasePlaceholder">自动采购备件</button>
+            </div>
           </div>
 
           <div v-if="!sparePartDirectory.length" class="empty-state">当前还没有备件信息。</div>
@@ -645,6 +655,7 @@ onMounted(async () => {
                 </div>
                 <div class="action-row">
                   <span class="status-pill">库存 {{ sparePart.stockQuantity }} {{ sparePart.unit }}</span>
+                  <span class="status-pill status-pill-muted">安全库存 {{ sparePart.safetyStock }} {{ sparePart.unit }}</span>
                   <button class="button button-ghost" type="button" @click="editSparePart(sparePart)">编辑</button>
                   <button class="button button-danger" type="button" @click="removeSparePart(sparePart.id)">
                     删除
@@ -955,6 +966,10 @@ onMounted(async () => {
             <label>
               <span>当前库存</span>
               <input v-model="sparePartForm.stockQuantity" type="number" min="0" />
+            </label>
+            <label>
+              <span>安全库存</span>
+              <input v-model="sparePartForm.safetyStock" type="number" min="0" />
             </label>
           </div>
 

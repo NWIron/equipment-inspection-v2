@@ -39,6 +39,7 @@ export const useWorkOrderStore = defineStore('workOrders', () => {
   const creatorOptions = ref([])
   const engineerOptions = ref([])
   const faultCodes = ref([])
+  const sparePartOptions = ref([])
   const priorityOptions = ref([])
   const taskStatusOptions = ref([])
   const draftWorkOrder = ref(null)
@@ -53,6 +54,7 @@ export const useWorkOrderStore = defineStore('workOrders', () => {
     creatorOptions.value = Array.isArray(payload.creatorOptions) ? payload.creatorOptions : []
     engineerOptions.value = Array.isArray(payload.engineerOptions) ? payload.engineerOptions : []
     faultCodes.value = Array.isArray(payload.faultCodes) ? payload.faultCodes : []
+    sparePartOptions.value = Array.isArray(payload.sparePartOptions) ? payload.sparePartOptions : []
     priorityOptions.value = Array.isArray(payload.priorityOptions) ? payload.priorityOptions : []
     taskStatusOptions.value = Array.isArray(payload.taskStatusOptions) ? payload.taskStatusOptions : []
     draftWorkOrder.value = payload.draftWorkOrder ?? null
@@ -72,6 +74,9 @@ export const useWorkOrderStore = defineStore('workOrders', () => {
     }
     if (Array.isArray(payload.faultCodes)) {
       faultCodes.value = payload.faultCodes
+    }
+    if (Array.isArray(payload.sparePartOptions)) {
+      sparePartOptions.value = payload.sparePartOptions
     }
     if (Array.isArray(payload.priorityOptions)) {
       priorityOptions.value = payload.priorityOptions
@@ -213,6 +218,24 @@ export const useWorkOrderStore = defineStore('workOrders', () => {
     return result
   }
 
+  async function saveSpareParts(workOrderId, payload) {
+    const result = await requestWorkOrderApi(`/api/work-orders/${workOrderId}/spare-parts`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+
+    if (result.ok) {
+      if (Array.isArray(result.workOrders)) {
+        applyBootstrap(result)
+      }
+      if (result.workOrder) {
+        applyWorkOrderDetail(result)
+      }
+    }
+
+    return result
+  }
+
   async function updateTask(workOrderId, taskId, payload) {
     const result = await requestWorkOrderApi(`/api/work-orders/${workOrderId}/tasks/${taskId}`, {
       method: 'PUT',
@@ -269,6 +292,8 @@ export const useWorkOrderStore = defineStore('workOrders', () => {
     isLoadingWorkOrder,
     loadWorkOrder,
     priorityOptions,
+    saveSpareParts,
+    sparePartOptions,
     taskStatusOptions,
     updateTask,
     updateWorkOrder,
