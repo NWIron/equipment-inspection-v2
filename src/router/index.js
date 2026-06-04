@@ -60,6 +60,12 @@ const router = createRouter({
           meta: { featureId: 'work-orders' },
         },
         {
+          path: 'modules/data-analysis',
+          name: 'data-analysis',
+          component: () => import('../views/DataAnalysisView.vue'),
+          meta: { featureId: 'data-analysis' },
+        },
+        {
           path: 'modules/:moduleId',
           name: 'module-placeholder',
           component: () => import('../views/ModulePlaceholderView.vue'),

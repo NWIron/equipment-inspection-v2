@@ -36,7 +36,7 @@ export const FEATURE_CATALOG = [
     category: 'Analytics',
     shortLabel: 'DA',
     accent: 'slate',
-    phaseLabel: '规划中',
+    phaseLabel: '报表预览',
     path: '/modules/data-analysis',
   },
   {
