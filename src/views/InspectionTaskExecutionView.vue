@@ -5,6 +5,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
 import { useMessageToastStore } from '../stores/messageToast'
 import { goBackOrHome } from '../utils/navigation'
+import { compressUploadPhoto } from '../utils/photoCompression'
 import { formatDateTimeDisplay } from '../utils/datetime'
 
 const route = useRoute()
@@ -16,8 +17,6 @@ const isCompleting = ref(false)
 const isProcessingPhotos = ref(false)
 
 const MAX_PHOTO_COUNT = 6
-const MAX_PHOTO_DIMENSION = 1600
-const MAX_PHOTO_DATA_LENGTH = 1_800_000
 
 const executionForm = reactive({
   faultCodeId: '',
@@ -25,57 +24,6 @@ const executionForm = reactive({
   results: [],
   photos: [],
 })
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result ?? ''))
-    reader.onerror = () => reject(new Error('读取照片失败，请重试。'))
-    reader.readAsDataURL(file)
-  })
-}
-
-function loadImage(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const image = new Image()
-    image.onload = () => resolve(image)
-    image.onerror = () => reject(new Error('照片解析失败，请重新拍摄。'))
-    image.src = dataUrl
-  })
-}
-
-async function compressPhoto(file) {
-  const dataUrl = await readFileAsDataUrl(file)
-  const image = await loadImage(dataUrl)
-  const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(image.width, image.height))
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, Math.round(image.width * scale))
-  canvas.height = Math.max(1, Math.round(image.height * scale))
-
-  const context = canvas.getContext('2d')
-
-  if (!context) {
-    throw new Error('无法处理照片，请更换浏览器后重试。')
-  }
-
-  context.drawImage(image, 0, 0, canvas.width, canvas.height)
-  const compressed = canvas.toDataURL('image/jpeg', 0.82)
-
-  if (!compressed.startsWith('data:image/')) {
-    throw new Error('照片压缩失败，请重试。')
-  }
-
-  if (compressed.length > MAX_PHOTO_DATA_LENGTH) {
-    throw new Error('单张照片体积仍然过大，请重新拍摄更清晰但更近距离的照片。')
-  }
-
-  const normalizedName = file.name && file.name.trim() ? file.name.replace(/\.[^.]+$/, '') : `inspection-photo-${Date.now()}`
-
-  return {
-    fileName: `${normalizedName}.jpg`,
-    photoData: compressed,
-  }
-}
 
 function getTaskStatusClass(status) {
   return {
@@ -135,7 +83,7 @@ async function handlePhotoSelection(event) {
     const newPhotos = []
 
     for (const file of files.slice(0, remainingCount)) {
-      newPhotos.push(await compressPhoto(file))
+      newPhotos.push(await compressUploadPhoto(file))
     }
 
     executionForm.photos.push(...newPhotos)
