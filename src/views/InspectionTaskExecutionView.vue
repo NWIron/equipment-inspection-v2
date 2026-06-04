@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { pickLocaleText, translateStaticText } from '../i18n'
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
 import { useMessageToastStore } from '../stores/messageToast'
 import { goBackOrHome } from '../utils/navigation'
@@ -69,12 +70,12 @@ async function handlePhotoSelection(event) {
   const remainingCount = MAX_PHOTO_COUNT - executionForm.photos.length
 
   if (remainingCount <= 0) {
-    setFeedback(`现场照片最多上传 ${MAX_PHOTO_COUNT} 张。`, 'error')
+    setFeedback(pickLocaleText(`现场照片最多上传 ${MAX_PHOTO_COUNT} 张。`, `You can upload up to ${MAX_PHOTO_COUNT} site photos.`), 'error')
     return
   }
 
   if (files.length > remainingCount) {
-    setFeedback(`超出数量上限，仅会保留前 ${remainingCount} 张新照片。`, 'info')
+    setFeedback(pickLocaleText(`超出数量上限，仅会保留前 ${remainingCount} 张新照片。`, `The limit was exceeded. Only the first ${remainingCount} new photos will be kept.`), 'info')
   }
 
   isProcessingPhotos.value = true
@@ -88,7 +89,7 @@ async function handlePhotoSelection(event) {
 
     executionForm.photos.push(...newPhotos)
   } catch (error) {
-    setFeedback(error instanceof Error ? error.message : '处理照片失败，请重试。', 'error')
+    setFeedback(error instanceof Error ? error.message : pickLocaleText('处理照片失败，请重试。', 'Failed to process the photo. Please try again.'), 'error')
   } finally {
     isProcessingPhotos.value = false
   }
@@ -159,13 +160,13 @@ onMounted(loadTask)
           </svg>
         </button>
         <div class="page-header-copy">
-          <h2 class="page-title">任务点检</h2>
+          <h2 class="page-title">{{ pickLocaleText('任务点检', 'Task Execution') }}</h2>
         </div>
       </div>
     </div>
 
-    <div v-if="inspectionTaskStore.isLoadingTask" class="notice">正在加载任务详情...</div>
-    <div v-else-if="!inspectionTaskStore.activeTask" class="empty-state">未找到点检任务。</div>
+    <div v-if="inspectionTaskStore.isLoadingTask" class="notice">{{ pickLocaleText('正在加载任务详情...', 'Loading task details...') }}</div>
+    <div v-else-if="!inspectionTaskStore.activeTask" class="empty-state">{{ pickLocaleText('未找到点检任务。', 'Inspection task not found.') }}</div>
 
     <template v-else>
       <section class="surface-card section-card">
@@ -183,14 +184,14 @@ onMounted(loadTask)
                   params: { workOrderId: inspectionTaskStore.activeTask.linkedWorkOrder.id },
                 }"
               >
-                查看对应工单
+                {{ pickLocaleText('查看对应工单', 'View linked work order') }}
               </RouterLink>
               <RouterLink
                 v-else
                 class="button"
                 :to="{ name: 'work-order-management', query: { sourceTaskId: inspectionTaskStore.activeTask.id } }"
               >
-                创建维修工单
+                {{ pickLocaleText('创建维修工单', 'Create work order') }}
               </RouterLink>
             <button
               class="button button-success"
@@ -198,50 +199,50 @@ onMounted(loadTask)
               :disabled="!inspectionTaskStore.activeTask.canComplete || isCompleting"
               @click="completeTask"
             >
-              {{ isCompleting ? '提交中...' : '标记已完成' }}
+              {{ isCompleting ? pickLocaleText('提交中...', 'Submitting...') : pickLocaleText('标记已完成', 'Mark as completed') }}
             </button>
           </div>
         </div>
 
         <div class="entity-meta-grid">
           <div class="entity-meta-block">
-            <span class="entity-meta-label">任务单号</span>
-            <strong>{{ inspectionTaskStore.activeTask.taskNumber || '待生成' }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('任务单号', 'Task number') }}</span>
+            <strong>{{ inspectionTaskStore.activeTask.taskNumber || pickLocaleText('待生成', 'Pending generation') }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">设备信息</span>
+            <span class="entity-meta-label">{{ pickLocaleText('设备信息', 'Equipment') }}</span>
             <strong>
               {{ inspectionTaskStore.activeTask.equipment?.equipmentCode }} ·
               {{ inspectionTaskStore.activeTask.equipment?.description }}
             </strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">点检员</span>
-            <strong>{{ inspectionTaskStore.activeTask.inspector?.name || '未分配' }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('点检员', 'Inspector') }}</span>
+            <strong>{{ inspectionTaskStore.activeTask.inspector?.name || pickLocaleText('未分配', 'Unassigned') }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">设备责任人</span>
-            <strong>{{ inspectionTaskStore.activeTask.equipment?.ownerName || '未分配' }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('设备责任人', 'Equipment owner') }}</span>
+            <strong>{{ inspectionTaskStore.activeTask.equipment?.ownerName || pickLocaleText('未分配', 'Unassigned') }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">任务创建时间</span>
+            <span class="entity-meta-label">{{ pickLocaleText('任务创建时间', 'Created at') }}</span>
             <strong>{{ formatDateTimeDisplay(inspectionTaskStore.activeTask.createdAt) }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">优先级</span>
-            <strong>{{ inspectionTaskStore.activeTask.priority }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('优先级', 'Priority') }}</span>
+            <strong>{{ translateStaticText(inspectionTaskStore.activeTask.priority) }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">执行状态</span>
+            <span class="entity-meta-label">{{ pickLocaleText('执行状态', 'Execution status') }}</span>
             <strong class="task-status" :class="getTaskStatusClass(inspectionTaskStore.activeTask.status)">
               <span class="task-status__dot"></span>
-              {{ inspectionTaskStore.activeTask.status }}
+              {{ translateStaticText(inspectionTaskStore.activeTask.status) }}
             </strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">关联工单</span>
+            <span class="entity-meta-label">{{ pickLocaleText('关联工单', 'Linked work order') }}</span>
             <strong>
-              {{ inspectionTaskStore.activeTask.linkedWorkOrder?.orderNumber || '未创建' }}
+              {{ inspectionTaskStore.activeTask.linkedWorkOrder?.orderNumber || pickLocaleText('未创建', 'Not created') }}
             </strong>
           </div>
         </div>
@@ -251,7 +252,7 @@ onMounted(loadTask)
         <div class="section-headline">
           <div>
             <p class="kicker">Execution</p>
-            <h3 class="section-title">点检执行</h3>
+            <h3 class="section-title">{{ pickLocaleText('点检执行', 'Inspection execution') }}</h3>
           </div>
           <button
             class="button button-success"
@@ -259,7 +260,7 @@ onMounted(loadTask)
             :disabled="inspectionTaskStore.activeTask.status === '已完成' || isSaving"
             @click="saveExecution"
           >
-            {{ isSaving ? '保存中...' : '保存点检结果' }}
+            {{ isSaving ? pickLocaleText('保存中...', 'Saving...') : pickLocaleText('保存点检结果', 'Save inspection results') }}
           </button>
         </div>
 
@@ -271,10 +272,10 @@ onMounted(loadTask)
                 <p>{{ item.description }}</p>
               </div>
               <label class="result-select-field">
-                <span>点检结果</span>
+                <span>{{ pickLocaleText('点检结果', 'Inspection result') }}</span>
                 <select v-model="item.resultStatus" :disabled="inspectionTaskStore.activeTask.status === '已完成'">
                   <option v-for="status in inspectionTaskStore.resultStatusOptions" :key="status" :value="status">
-                    {{ status }}
+                    {{ translateStaticText(status) }}
                   </option>
                 </select>
               </label>
@@ -286,7 +287,7 @@ onMounted(loadTask)
           <div class="photo-field__header">
             <div>
               <span class="photo-field__label">现场照片</span>
-              <p class="photo-field__hint">支持手机拍照上传，照片将自动压缩后保存，最多 {{ MAX_PHOTO_COUNT }} 张。</p>
+              <p class="photo-field__hint">{{ pickLocaleText(`支持手机拍照上传，照片将自动压缩后保存，最多 ${MAX_PHOTO_COUNT} 张。`, `You can upload photos from a mobile device. Photos are compressed automatically before saving, with a maximum of ${MAX_PHOTO_COUNT} photos.`) }}</p>
             </div>
             <label
               class="button button-ghost photo-upload-trigger"
@@ -301,24 +302,24 @@ onMounted(loadTask)
                 :disabled="inspectionTaskStore.activeTask.status === '已完成' || isProcessingPhotos || executionForm.photos.length >= MAX_PHOTO_COUNT"
                 @change="handlePhotoSelection"
               />
-              {{ isProcessingPhotos ? '处理中...' : '拍照上传照片' }}
+              {{ isProcessingPhotos ? pickLocaleText('处理中...', 'Processing...') : pickLocaleText('拍照上传照片', 'Capture and upload') }}
             </label>
           </div>
 
-          <div v-if="!executionForm.photos.length" class="photo-empty-state">当前还没有上传现场照片。</div>
+          <div v-if="!executionForm.photos.length" class="photo-empty-state">{{ pickLocaleText('当前还没有上传现场照片。', 'No site photos have been uploaded yet.') }}</div>
 
           <div v-else class="photo-grid">
             <article v-for="(photo, index) in executionForm.photos" :key="photo.id || `${photo.fileName}-${index}`" class="photo-card">
-              <img class="photo-card__image" :src="photo.photoData" :alt="photo.fileName || `现场照片 ${index + 1}`" />
+              <img class="photo-card__image" :src="photo.photoData" :alt="photo.fileName || pickLocaleText(`现场照片 ${index + 1}`, `Site photo ${index + 1}`)" />
               <div class="photo-card__footer">
-                <span class="photo-card__name">{{ photo.fileName || `现场照片 ${index + 1}` }}</span>
+                <span class="photo-card__name">{{ photo.fileName || pickLocaleText(`现场照片 ${index + 1}`, `Site photo ${index + 1}`) }}</span>
                 <button
                   class="button button-danger"
                   type="button"
                   :disabled="inspectionTaskStore.activeTask.status === '已完成'"
                   @click="removePhoto(index)"
                 >
-                  删除
+                  {{ pickLocaleText('删除', 'Delete') }}
                 </button>
               </div>
             </article>
@@ -326,9 +327,9 @@ onMounted(loadTask)
         </div>
 
         <div class="fault-info-field">
-          <span>故障信息</span>
+          <span>{{ pickLocaleText('故障信息', 'Fault information') }}</span>
           <select v-model="executionForm.faultCodeId" :disabled="inspectionTaskStore.activeTask.status === '已完成'">
-            <option value="">无</option>
+            <option value="">{{ pickLocaleText('无', 'None') }}</option>
             <option v-for="faultCode in inspectionTaskStore.faultCodes" :key="faultCode.id" :value="faultCode.id">
               {{ faultCode.code }} · {{ faultCode.description }}
             </option>
@@ -336,11 +337,11 @@ onMounted(loadTask)
         </div>
 
         <label class="fault-note-field">
-          <span>故障说明</span>
+          <span>{{ pickLocaleText('故障说明', 'Fault notes') }}</span>
           <textarea
             v-model="executionForm.faultNote"
             rows="3"
-            placeholder="如点检过程中发现问题，可在完成点检项后补充故障说明"
+            :placeholder="pickLocaleText('如点检过程中发现问题，可在完成点检项后补充故障说明', 'If issues are found during inspection, add fault notes after completing the checklist items.')"
             :disabled="inspectionTaskStore.activeTask.status === '已完成'"
           ></textarea>
         </label>

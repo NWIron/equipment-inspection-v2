@@ -1,12 +1,15 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { pickLocaleText } from '../i18n'
 import { useAccessStore } from '../stores/access'
 import { useMessageToastStore } from '../stores/messageToast'
 
 const route = useRoute()
 const router = useRouter()
+useI18n()
 const accessStore = useAccessStore()
 const toastStore = useMessageToastStore()
 
@@ -19,17 +22,17 @@ const isSubmitting = ref(false)
 
 const demoAccounts = [
   {
-    label: '管理员',
+    label: pickLocaleText('管理员', 'Administrator'),
     email: 'admin@mettlertoledo.com',
     password: 'Pass@123',
   },
   {
-    label: '点检员',
+    label: pickLocaleText('点检员', 'Inspector'),
     email: 'inspector@mettlertoledo.com',
     password: 'Pass@123',
   },
   {
-    label: '设备工程师',
+    label: pickLocaleText('设备工程师', 'Equipment Engineer'),
     email: 'engineer@mettlertoledo.com',
     password: 'Pass@123',
   },
@@ -55,7 +58,10 @@ async function submitLogin() {
 }
 
 function showSsoMessage() {
-  toastStore.show('Azure AD SSO 已预留入口，一期暂未接入。', 'info')
+  toastStore.show(
+    pickLocaleText('Azure AD SSO 已预留入口，一期暂未接入。', 'Azure AD SSO is reserved for a future phase and is not enabled yet.'),
+    'info',
+  )
 }
 
 onMounted(() => {
@@ -75,33 +81,37 @@ onMounted(() => {
 
       <div class="page-intro">
         <p class="kicker">Sign In</p>
-        <h2>登录系统</h2>
-        <p>使用邮箱和密码登录，系统会根据角色自动显示可访问的功能卡片。</p>
+        <h2>{{ pickLocaleText('登录系统', 'Sign in') }}</h2>
+        <p>{{ pickLocaleText('使用邮箱和密码登录，系统会根据角色自动显示可访问的功能卡片。', 'Sign in with your email and password. The system will show the feature cards available to your role automatically.') }}</p>
       </div>
 
       <form class="login-form" @submit.prevent="submitLogin">
         <label>
-          <span>邮箱</span>
+          <span>{{ pickLocaleText('邮箱', 'Email') }}</span>
           <input v-model="loginForm.email" type="email" placeholder="name@example.com" />
         </label>
 
         <label>
-          <span>密码</span>
-          <input v-model="loginForm.password" type="password" placeholder="请输入密码" />
+          <span>{{ pickLocaleText('密码', 'Password') }}</span>
+          <input
+            v-model="loginForm.password"
+            type="password"
+            :placeholder="pickLocaleText('请输入密码', 'Enter your password')"
+          />
         </label>
 
         <button class="button login-submit" type="submit" :disabled="isSubmitting">
-          {{ isSubmitting ? '登录中...' : '邮箱登录' }}
+          {{ isSubmitting ? pickLocaleText('登录中...', 'Signing in...') : pickLocaleText('邮箱登录', 'Sign in with email') }}
         </button>
         <button class="button button-secondary login-sso" type="button" @click="showSsoMessage">
-          Azure AD SSO（预留）
+          {{ pickLocaleText('Azure AD SSO（预留）', 'Azure AD SSO (Reserved)') }}
         </button>
       </form>
 
       <div class="demo-section">
         <div class="demo-header">
-          <h3>演示账号</h3>
-          <span>点击即可填充</span>
+          <h3>{{ pickLocaleText('演示账号', 'Demo accounts') }}</h3>
+          <span>{{ pickLocaleText('点击即可填充', 'Click to fill') }}</span>
         </div>
 
         <div class="demo-list">

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { pickLocaleText, translateStaticText } from '../i18n'
 import { useEquipmentStore } from '../stores/equipment'
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
 import { useWorkOrderStore } from '../stores/workOrders'
@@ -38,7 +39,7 @@ function goBack() {
 
 function buildBarSeries(items, getLabel, preferredOrder = []) {
   const counts = items.reduce((lookup, item) => {
-    const label = getLabel(item) || '未分类'
+    const label = getLabel(item) || pickLocaleText('未分类', 'Uncategorized')
     lookup[label] = (lookup[label] ?? 0) + 1
     return lookup
   }, {})
@@ -116,7 +117,7 @@ const equipmentWorkloadRows = computed(() =>
         id: equipment.id,
         equipmentCode: equipment.equipmentCode,
         description: equipment.description,
-        location: equipment.location || '未配置位置',
+        location: equipment.location || pickLocaleText('未配置位置', 'Location not configured'),
         taskCount: relatedTasks.length,
         abnormalTaskCount: relatedTasks.filter((task) => Number(task.abnormalCount ?? 0) > 0).length,
         workOrderCount: relatedWorkOrders.length,
@@ -212,18 +213,18 @@ onMounted(loadReports)
           </svg>
         </button>
         <div class="page-header-copy">
-          <h2 class="page-title">数据分析</h2>
+          <h2 class="page-title">{{ pickLocaleText('数据分析', 'Data Analysis') }}</h2>
         </div>
       </div>
       <button class="button button-success" type="button" :disabled="isLoading" @click="loadReports">
-        {{ isLoading ? '刷新中...' : '刷新报表' }}
+        {{ isLoading ? pickLocaleText('刷新中...', 'Refreshing...') : pickLocaleText('刷新报表', 'Refresh reports') }}
       </button>
     </div>
 
     <section v-if="loadErrors.length" class="surface-card section-card warning-card">
       <div>
         <p class="kicker">Data Status</p>
-        <h3 class="section-title">部分数据加载失败</h3>
+        <h3 class="section-title">{{ pickLocaleText('部分数据加载失败', 'Some data failed to load') }}</h3>
       </div>
       <div class="warning-list">
         <p v-for="message in loadErrors" :key="message" class="warning-item">{{ message }}</p>
@@ -234,7 +235,7 @@ onMounted(loadReports)
       <div class="section-headline">
         <div>
           <p class="kicker">Overview</p>
-          <h3 class="section-title">运营总览</h3>
+          <h3 class="section-title">{{ pickLocaleText('运营总览', 'Operations overview') }}</h3>
         </div>
       </div>
 
@@ -247,8 +248,8 @@ onMounted(loadReports)
       </div>
     </section>
 
-    <div v-if="isLoading && !hasAnyData" class="surface-card section-card empty-state">正在汇总报表数据...</div>
-    <div v-else-if="!hasAnyData" class="surface-card section-card empty-state">当前暂无可用于分析的数据。</div>
+    <div v-if="isLoading && !hasAnyData" class="surface-card section-card empty-state">{{ pickLocaleText('正在汇总报表数据...', 'Compiling report data...') }}</div>
+    <div v-else-if="!hasAnyData" class="surface-card section-card empty-state">{{ pickLocaleText('当前暂无可用于分析的数据。', 'There is no data available for analysis yet.') }}</div>
 
     <template v-else>
       <div class="report-grid">
@@ -256,13 +257,13 @@ onMounted(loadReports)
           <div class="section-headline">
             <div>
               <p class="kicker">Equipment</p>
-              <h3 class="section-title">设备状态分布</h3>
+              <h3 class="section-title">{{ pickLocaleText('设备状态分布', 'Equipment status distribution') }}</h3>
             </div>
           </div>
           <div class="bar-list">
             <div v-for="item in equipmentStatusSeries" :key="item.label" class="bar-item">
               <div class="bar-item__header">
-                <span>{{ item.label }}</span>
+                <span>{{ translateStaticText(item.label) }}</span>
                 <strong>{{ item.count }}</strong>
               </div>
               <div class="bar-track"><span class="bar-fill bar-fill--teal" :style="getBarStyle(item)"></span></div>
@@ -274,13 +275,13 @@ onMounted(loadReports)
           <div class="section-headline">
             <div>
               <p class="kicker">Inspection</p>
-              <h3 class="section-title">点检任务状态</h3>
+              <h3 class="section-title">{{ pickLocaleText('点检任务状态', 'Inspection task status') }}</h3>
             </div>
           </div>
           <div class="bar-list">
             <div v-for="item in taskStatusSeries" :key="item.label" class="bar-item">
               <div class="bar-item__header">
-                <span>{{ item.label }}</span>
+                <span>{{ translateStaticText(item.label) }}</span>
                 <strong>{{ item.count }}</strong>
               </div>
               <div class="bar-track"><span class="bar-fill bar-fill--blue" :style="getBarStyle(item)"></span></div>
@@ -292,13 +293,13 @@ onMounted(loadReports)
           <div class="section-headline">
             <div>
               <p class="kicker">Inspection</p>
-              <h3 class="section-title">点检优先级分布</h3>
+              <h3 class="section-title">{{ pickLocaleText('点检优先级分布', 'Inspection priority distribution') }}</h3>
             </div>
           </div>
           <div class="bar-list">
             <div v-for="item in taskPrioritySeries" :key="item.label" class="bar-item">
               <div class="bar-item__header">
-                <span>{{ item.label }}</span>
+                <span>{{ translateStaticText(item.label) }}</span>
                 <strong>{{ item.count }}</strong>
               </div>
               <div class="bar-track"><span class="bar-fill bar-fill--amber" :style="getBarStyle(item)"></span></div>
@@ -310,13 +311,13 @@ onMounted(loadReports)
           <div class="section-headline">
             <div>
               <p class="kicker">Maintenance</p>
-              <h3 class="section-title">工单状态分布</h3>
+              <h3 class="section-title">{{ pickLocaleText('工单状态分布', 'Work-order status distribution') }}</h3>
             </div>
           </div>
           <div class="bar-list">
             <div v-for="item in workOrderStatusSeries" :key="item.label" class="bar-item">
               <div class="bar-item__header">
-                <span>{{ item.label }}</span>
+                <span>{{ translateStaticText(item.label) }}</span>
                 <strong>{{ item.count }}</strong>
               </div>
               <div class="bar-track"><span class="bar-fill bar-fill--slate" :style="getBarStyle(item)"></span></div>
@@ -329,7 +330,7 @@ onMounted(loadReports)
         <div class="section-headline">
           <div>
             <p class="kicker">Equipment Load</p>
-            <h3 class="section-title">设备工作量排行</h3>
+            <h3 class="section-title">{{ pickLocaleText('设备工作量排行', 'Equipment workload ranking') }}</h3>
           </div>
         </div>
 
@@ -337,12 +338,12 @@ onMounted(loadReports)
           <table>
             <thead>
               <tr>
-                <th>设备</th>
-                <th>位置</th>
-                <th>点检任务</th>
-                <th>异常任务</th>
-                <th>维修工单</th>
-                <th>已确认工单</th>
+                <th>{{ pickLocaleText('设备', 'Equipment') }}</th>
+                <th>{{ pickLocaleText('位置', 'Location') }}</th>
+                <th>{{ pickLocaleText('点检任务', 'Inspection tasks') }}</th>
+                <th>{{ pickLocaleText('异常任务', 'Abnormal tasks') }}</th>
+                <th>{{ pickLocaleText('维修工单', 'Work orders') }}</th>
+                <th>{{ pickLocaleText('已确认工单', 'Confirmed work orders') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -367,20 +368,20 @@ onMounted(loadReports)
           <div class="section-headline">
             <div>
               <p class="kicker">Spare Parts</p>
-              <h3 class="section-title">安全库存预警</h3>
+              <h3 class="section-title">{{ pickLocaleText('安全库存预警', 'Safety stock alerts') }}</h3>
             </div>
           </div>
 
-          <div v-if="!sparePartRiskRows.length" class="empty-state empty-state--compact">当前没有低于安全库存的备件。</div>
+          <div v-if="!sparePartRiskRows.length" class="empty-state empty-state--compact">{{ pickLocaleText('当前没有低于安全库存的备件。', 'There are no spare parts below safety stock.') }}</div>
           <div v-else class="table-shell">
             <table>
               <thead>
                 <tr>
-                  <th>备件号</th>
-                  <th>描述</th>
-                  <th>现有库存</th>
-                  <th>安全库存</th>
-                  <th>缺口</th>
+                  <th>{{ pickLocaleText('备件号', 'Part number') }}</th>
+                  <th>{{ pickLocaleText('描述', 'Description') }}</th>
+                  <th>{{ pickLocaleText('现有库存', 'Current stock') }}</th>
+                  <th>{{ pickLocaleText('安全库存', 'Safety stock') }}</th>
+                  <th>{{ pickLocaleText('缺口', 'Gap') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -400,28 +401,28 @@ onMounted(loadReports)
           <div class="section-headline">
             <div>
               <p class="kicker">Maintenance</p>
-              <h3 class="section-title">重点跟进工单</h3>
+              <h3 class="section-title">{{ pickLocaleText('重点跟进工单', 'Focus work orders') }}</h3>
             </div>
           </div>
 
-          <div v-if="!focusWorkOrders.length" class="empty-state empty-state--compact">当前没有待跟进的维修工单。</div>
+          <div v-if="!focusWorkOrders.length" class="empty-state empty-state--compact">{{ pickLocaleText('当前没有待跟进的维修工单。', 'There are no work orders needing follow-up.') }}</div>
           <div v-else class="table-shell">
             <table>
               <thead>
                 <tr>
-                  <th>工单号</th>
-                  <th>设备</th>
-                  <th>状态</th>
-                  <th>优先级</th>
-                  <th>创建时间</th>
+                  <th>{{ pickLocaleText('工单号', 'Order number') }}</th>
+                  <th>{{ pickLocaleText('设备', 'Equipment') }}</th>
+                  <th>{{ pickLocaleText('状态', 'Status') }}</th>
+                  <th>{{ pickLocaleText('优先级', 'Priority') }}</th>
+                  <th>{{ pickLocaleText('创建时间', 'Created at') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="row in focusWorkOrders" :key="row.id">
                   <td><strong>{{ row.orderNumber }}</strong></td>
-                  <td>{{ row.equipment?.equipmentCode || '未关联设备' }}</td>
-                  <td>{{ row.status }}</td>
-                  <td>{{ row.priority }}</td>
+                  <td>{{ row.equipment?.equipmentCode || pickLocaleText('未关联设备', 'No linked equipment') }}</td>
+                  <td>{{ translateStaticText(row.status) }}</td>
+                  <td>{{ translateStaticText(row.priority) }}</td>
                   <td>{{ formatDateTimeDisplay(row.createdAt) }}</td>
                 </tr>
               </tbody>
@@ -434,34 +435,34 @@ onMounted(loadReports)
         <div class="section-headline">
           <div>
             <p class="kicker">Inspection Risk</p>
-            <h3 class="section-title">异常点检任务</h3>
+            <h3 class="section-title">{{ pickLocaleText('异常点检任务', 'Abnormal inspection tasks') }}</h3>
           </div>
         </div>
 
-        <div v-if="!abnormalTasks.length" class="empty-state empty-state--compact">当前没有异常点检任务。</div>
+        <div v-if="!abnormalTasks.length" class="empty-state empty-state--compact">{{ pickLocaleText('当前没有异常点检任务。', 'There are no abnormal inspection tasks right now.') }}</div>
         <div v-else class="table-shell">
           <table>
             <thead>
               <tr>
-                <th>任务</th>
-                <th>设备</th>
-                <th>点检员</th>
-                <th>异常项</th>
-                <th>优先级</th>
-                <th>状态</th>
+                <th>{{ pickLocaleText('任务', 'Task') }}</th>
+                <th>{{ pickLocaleText('设备', 'Equipment') }}</th>
+                <th>{{ pickLocaleText('点检员', 'Inspector') }}</th>
+                <th>{{ pickLocaleText('异常项', 'Abnormal items') }}</th>
+                <th>{{ pickLocaleText('优先级', 'Priority') }}</th>
+                <th>{{ pickLocaleText('状态', 'Status') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="row in abnormalTasks" :key="row.id">
                 <td>
                   <strong>{{ row.taskName }}</strong>
-                  <div class="table-subtext">{{ row.taskNumber || '待生成任务单号' }}</div>
+                  <div class="table-subtext">{{ row.taskNumber || pickLocaleText('待生成任务单号', 'Task number pending') }}</div>
                 </td>
-                <td>{{ row.equipment?.equipmentCode || '未关联设备' }}</td>
-                <td>{{ row.inspector?.name || '未分配' }}</td>
+                <td>{{ row.equipment?.equipmentCode || pickLocaleText('未关联设备', 'No linked equipment') }}</td>
+                <td>{{ row.inspector?.name || pickLocaleText('未分配', 'Unassigned') }}</td>
                 <td class="is-danger">{{ row.abnormalCount }}</td>
-                <td>{{ row.priority }}</td>
-                <td>{{ row.status }}</td>
+                <td>{{ translateStaticText(row.priority) }}</td>
+                <td>{{ translateStaticText(row.status) }}</td>
               </tr>
             </tbody>
           </table>

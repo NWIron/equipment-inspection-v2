@@ -3,6 +3,7 @@ import QRCode from 'qrcode'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { pickLocaleText, translateStaticText } from '../i18n'
 import { useEquipmentStore } from '../stores/equipment'
 import { useMessageToastStore } from '../stores/messageToast'
 import { goBackOrHome } from '../utils/navigation'
@@ -78,13 +79,21 @@ const inspectionItemDirectory = computed(() => equipmentStore.inspectionItemDire
 const faultCodeDirectory = computed(() => equipmentStore.faultCodeDirectory)
 const sparePartDirectory = computed(() => equipmentStore.sparePartDirectory)
 const ownerOptions = computed(() => equipmentStore.ownerOptions)
-const equipmentEditorTitle = computed(() => (editingEquipmentId.value ? '编辑设备主数据' : '创建设备主数据'))
-const taskListEditorTitle = computed(() => (editingTaskListId.value ? '编辑任务清单' : '创建任务清单'))
-const inspectionItemEditorTitle = computed(() =>
-  editingInspectionItemId.value ? '编辑点检项' : '创建点检项',
+const equipmentEditorTitle = computed(() =>
+  editingEquipmentId.value ? pickLocaleText('编辑设备主数据', 'Edit equipment master data') : pickLocaleText('创建设备主数据', 'Create equipment master data'),
 )
-const faultCodeEditorTitle = computed(() => (editingFaultCodeId.value ? '编辑故障代码' : '创建故障代码'))
-const sparePartEditorTitle = computed(() => (editingSparePartId.value ? '编辑备件' : '创建备件'))
+const taskListEditorTitle = computed(() =>
+  editingTaskListId.value ? pickLocaleText('编辑任务清单', 'Edit task list') : pickLocaleText('创建任务清单', 'Create task list'),
+)
+const inspectionItemEditorTitle = computed(() =>
+  editingInspectionItemId.value ? pickLocaleText('编辑点检项', 'Edit inspection item') : pickLocaleText('创建点检项', 'Create inspection item'),
+)
+const faultCodeEditorTitle = computed(() =>
+  editingFaultCodeId.value ? pickLocaleText('编辑故障代码', 'Edit fault code') : pickLocaleText('创建故障代码', 'Create fault code'),
+)
+const sparePartEditorTitle = computed(() =>
+  editingSparePartId.value ? pickLocaleText('编辑备件', 'Edit spare part') : pickLocaleText('创建备件', 'Create spare part'),
+)
 
 function setFeedback(message, type = 'success') {
   toastStore.show(message, type)
@@ -255,7 +264,7 @@ function editSparePart(sparePart) {
 }
 
 function openAutoPurchasePlaceholder() {
-  setFeedback('自动采购备件功能待开发。', 'info')
+  setFeedback(pickLocaleText('自动采购备件功能待开发。', 'Automatic spare-part purchasing is planned for a future phase.'), 'info')
 }
 
 async function openEquipmentQrModal(equipment) {
@@ -275,7 +284,7 @@ async function openEquipmentQrModal(equipment) {
       },
     })
   } catch {
-    setFeedback('生成设备二维码失败，请重试。', 'error')
+    setFeedback(pickLocaleText('生成设备二维码失败，请重试。', 'Failed to generate the equipment QR code. Please try again.'), 'error')
     closeEquipmentQrModal()
   } finally {
     isGeneratingEquipmentQr.value = false
@@ -423,7 +432,7 @@ onMounted(async () => {
   <div class="page management-page">
     <div class="page-header">
       <div class="page-header-main">
-        <button class="button button-ghost button-icon" type="button" aria-label="返回上一页" @click="goBack">
+        <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('返回上一页', 'Go back')" @click="goBack">
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M9.5 3.5L5 8l4.5 4.5"
@@ -435,13 +444,13 @@ onMounted(async () => {
           </svg>
         </button>
         <div class="page-header-copy">
-          <h2 class="page-title">设备管理</h2>
+          <h2 class="page-title">{{ pickLocaleText('设备管理', 'Equipment Management') }}</h2>
         </div>
       </div>
     </div>
 
     <section class="surface-card section-card tab-card">
-      <div class="tab-bar" role="tablist" aria-label="Equipment management tabs">
+      <div class="tab-bar" role="tablist" :aria-label="pickLocaleText('设备管理分页', 'Equipment management tabs')">
         <button
           class="tab-button"
           :class="{ 'is-active': activeTab === 'equipment' }"
@@ -450,7 +459,7 @@ onMounted(async () => {
           :aria-selected="activeTab === 'equipment'"
           @click="activeTab = 'equipment'"
         >
-          设备主数据
+          {{ pickLocaleText('设备主数据', 'Equipment master data') }}
         </button>
         <button
           class="tab-button"
@@ -460,7 +469,7 @@ onMounted(async () => {
           :aria-selected="activeTab === 'taskLists'"
           @click="activeTab = 'taskLists'"
         >
-          点检任务清单
+          {{ pickLocaleText('点检任务清单', 'Inspection task lists') }}
         </button>
         <button
           class="tab-button"
@@ -470,7 +479,7 @@ onMounted(async () => {
           :aria-selected="activeTab === 'inspectionItems'"
           @click="activeTab = 'inspectionItems'"
         >
-          点检项
+          {{ pickLocaleText('点检项', 'Inspection items') }}
         </button>
         <button
           class="tab-button"
@@ -480,7 +489,7 @@ onMounted(async () => {
           :aria-selected="activeTab === 'faultCodes'"
           @click="activeTab = 'faultCodes'"
         >
-          故障代码
+          {{ pickLocaleText('故障代码', 'Fault codes') }}
         </button>
         <button
           class="tab-button"
@@ -490,23 +499,23 @@ onMounted(async () => {
           :aria-selected="activeTab === 'spareParts'"
           @click="activeTab = 'spareParts'"
         >
-          设备备件
+          {{ pickLocaleText('设备备件', 'Spare parts') }}
         </button>
       </div>
 
-      <div v-if="equipmentStore.isInitializing" class="notice">正在加载设备管理主数据...</div>
+      <div v-if="equipmentStore.isInitializing" class="notice">{{ pickLocaleText('正在加载设备管理主数据...', 'Loading equipment management master data...') }}</div>
 
       <div v-if="activeTab === 'equipment'" class="tab-panel">
         <div class="list-panel">
           <div class="section-headline">
             <div>
               <p class="kicker">Equipment Assets</p>
-              <h3 class="section-title">设备台账</h3>
+              <h3 class="section-title">{{ pickLocaleText('设备台账', 'Equipment register') }}</h3>
             </div>
-            <button class="button button-success" type="button" @click="openEquipmentModal">新建设备</button>
+            <button class="button button-success" type="button" @click="openEquipmentModal">{{ pickLocaleText('新建设备', 'Create equipment') }}</button>
           </div>
 
-          <div v-if="!equipmentList.length" class="empty-state">当前还没有设备主数据。</div>
+          <div v-if="!equipmentList.length" class="empty-state">{{ pickLocaleText('当前还没有设备主数据。', 'There is no equipment master data yet.') }}</div>
 
           <div v-else class="entity-list">
             <article v-for="equipment in equipmentList" :key="equipment.id" class="entity-card">
@@ -516,11 +525,11 @@ onMounted(async () => {
                   <p>{{ equipment.description }}</p>
                 </div>
                 <div class="action-row">
-                  <span class="status-pill">{{ equipment.status }}</span>
+                  <span class="status-pill">{{ translateStaticText(equipment.status) }}</span>
                   <button
                     class="button button-ghost button-icon"
                     type="button"
-                    :aria-label="`查看 ${equipment.equipmentCode} 二维码`"
+                    :aria-label="pickLocaleText(`查看 ${equipment.equipmentCode} 二维码`, `View QR code for ${equipment.equipmentCode}`)"
                     @click="openEquipmentQrModal(equipment)"
                   >
                     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -561,49 +570,49 @@ onMounted(async () => {
                       />
                     </svg>
                   </button>
-                  <button class="button button-ghost" type="button" @click="editEquipment(equipment)">编辑</button>
+                  <button class="button button-ghost" type="button" @click="editEquipment(equipment)">{{ pickLocaleText('编辑', 'Edit') }}</button>
                   <button class="button button-danger" type="button" @click="removeEquipment(equipment.id)">
-                    删除
+                    {{ pickLocaleText('删除', 'Delete') }}
                   </button>
                 </div>
               </div>
 
               <div class="entity-meta-grid">
                 <div class="entity-meta-block">
-                  <span class="entity-meta-label">类型 / 型号</span>
-                  <strong>{{ equipment.type || '未填写' }} / {{ equipment.model || '未填写' }}</strong>
+                  <span class="entity-meta-label">{{ pickLocaleText('类型 / 型号', 'Type / Model') }}</span>
+                  <strong>{{ equipment.type || translateStaticText('未填写') }} / {{ equipment.model || translateStaticText('未填写') }}</strong>
                 </div>
                 <div class="entity-meta-block">
-                  <span class="entity-meta-label">位置</span>
-                  <strong>{{ equipment.location || '未填写' }}</strong>
+                  <span class="entity-meta-label">{{ pickLocaleText('位置', 'Location') }}</span>
+                  <strong>{{ equipment.location || translateStaticText('未填写') }}</strong>
                 </div>
                 <div class="entity-meta-block">
-                  <span class="entity-meta-label">责任人</span>
-                  <strong>{{ equipment.owner?.name || '未分配' }}</strong>
+                  <span class="entity-meta-label">{{ pickLocaleText('责任人', 'Owner') }}</span>
+                  <strong>{{ equipment.owner?.name || translateStaticText('未分配') }}</strong>
                 </div>
                 <div class="entity-meta-block">
-                  <span class="entity-meta-label">点检频率</span>
-                  <strong>{{ equipment.inspectionFrequencyDays }} 天</strong>
+                  <span class="entity-meta-label">{{ pickLocaleText('点检频率', 'Inspection frequency') }}</span>
+                  <strong>{{ pickLocaleText(`${equipment.inspectionFrequencyDays} 天`, `${equipment.inspectionFrequencyDays} days`) }}</strong>
                 </div>
               </div>
 
               <div class="entity-group">
-                <span class="entity-meta-label">任务清单</span>
+                <span class="entity-meta-label">{{ pickLocaleText('任务清单', 'Task lists') }}</span>
                 <div class="tag-row">
                   <span v-for="taskList in equipment.taskLists" :key="taskList.id" class="tag">
                     {{ taskList.code }}
                   </span>
-                  <span v-if="!equipment.taskLists.length" class="tag tag-muted">未分配</span>
+                  <span v-if="!equipment.taskLists.length" class="tag tag-muted">{{ pickLocaleText('未分配', 'Unassigned') }}</span>
                 </div>
               </div>
 
               <div class="entity-group">
-                <span class="entity-meta-label">关联备件</span>
+                <span class="entity-meta-label">{{ pickLocaleText('关联备件', 'Linked spare parts') }}</span>
                 <div class="tag-row">
                   <span v-for="sparePart in equipment.spareParts" :key="sparePart.id" class="tag">
                     {{ sparePart.partNumber }}
                   </span>
-                  <span v-if="!equipment.spareParts.length" class="tag tag-muted">未关联</span>
+                  <span v-if="!equipment.spareParts.length" class="tag tag-muted">{{ pickLocaleText('未关联', 'Not linked') }}</span>
                 </div>
               </div>
             </article>
@@ -616,12 +625,12 @@ onMounted(async () => {
           <div class="section-headline">
             <div>
               <p class="kicker">Task Lists</p>
-              <h3 class="section-title">点检任务清单</h3>
+              <h3 class="section-title">{{ pickLocaleText('点检任务清单', 'Inspection task lists') }}</h3>
             </div>
-            <button class="button button-success" type="button" @click="openTaskListModal">新建清单</button>
+            <button class="button button-success" type="button" @click="openTaskListModal">{{ pickLocaleText('新建清单', 'Create list') }}</button>
           </div>
 
-          <div v-if="!taskListDirectory.length" class="empty-state">当前还没有任务清单。</div>
+          <div v-if="!taskListDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有任务清单。', 'There are no task lists yet.') }}</div>
 
           <div v-else class="entity-list">
             <article v-for="taskList in taskListDirectory" :key="taskList.id" class="entity-card">
@@ -631,10 +640,10 @@ onMounted(async () => {
                   <p>{{ taskList.description }}</p>
                 </div>
                 <div class="action-row">
-                  <span class="status-pill">{{ taskList.assignedEquipmentCount }} 台设备</span>
-                  <button class="button button-ghost" type="button" @click="editTaskList(taskList)">编辑</button>
+                  <span class="status-pill">{{ pickLocaleText(`${taskList.assignedEquipmentCount} 台设备`, `${taskList.assignedEquipmentCount} equipment`) }}</span>
+                  <button class="button button-ghost" type="button" @click="editTaskList(taskList)">{{ pickLocaleText('编辑', 'Edit') }}</button>
                   <button class="button button-danger" type="button" @click="removeTaskList(taskList.id)">
-                    删除
+                    {{ pickLocaleText('删除', 'Delete') }}
                   </button>
                 </div>
               </div>
@@ -643,7 +652,7 @@ onMounted(async () => {
                 <span v-for="inspectionItem in taskList.inspectionItems" :key="inspectionItem.id" class="tag">
                   {{ inspectionItem.code }}
                 </span>
-                <span v-if="!taskList.inspectionItems.length" class="tag tag-muted">未关联点检项</span>
+                <span v-if="!taskList.inspectionItems.length" class="tag tag-muted">{{ pickLocaleText('未关联点检项', 'No linked inspection items') }}</span>
               </div>
             </article>
           </div>
@@ -655,12 +664,12 @@ onMounted(async () => {
           <div class="section-headline">
             <div>
               <p class="kicker">Inspection Items</p>
-              <h3 class="section-title">点检项</h3>
+              <h3 class="section-title">{{ pickLocaleText('点检项', 'Inspection items') }}</h3>
             </div>
-            <button class="button button-success" type="button" @click="openInspectionItemModal">新建点检项</button>
+            <button class="button button-success" type="button" @click="openInspectionItemModal">{{ pickLocaleText('新建点检项', 'Create inspection item') }}</button>
           </div>
 
-          <div v-if="!inspectionItemDirectory.length" class="empty-state">当前还没有点检项。</div>
+          <div v-if="!inspectionItemDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有点检项。', 'There are no inspection items yet.') }}</div>
 
           <div v-else class="entity-list">
             <article v-for="inspectionItem in inspectionItemDirectory" :key="inspectionItem.id" class="entity-card">
@@ -670,12 +679,12 @@ onMounted(async () => {
                   <p>{{ inspectionItem.description }}</p>
                 </div>
                 <div class="action-row">
-                  <span class="status-pill">{{ inspectionItem.taskListCount }} 个清单</span>
+                  <span class="status-pill">{{ pickLocaleText(`${inspectionItem.taskListCount} 个清单`, `${inspectionItem.taskListCount} lists`) }}</span>
                   <button class="button button-ghost" type="button" @click="editInspectionItem(inspectionItem)">
-                    编辑
+                    {{ pickLocaleText('编辑', 'Edit') }}
                   </button>
                   <button class="button button-danger" type="button" @click="removeInspectionItem(inspectionItem.id)">
-                    删除
+                    {{ pickLocaleText('删除', 'Delete') }}
                   </button>
                 </div>
               </div>
@@ -689,12 +698,12 @@ onMounted(async () => {
           <div class="section-headline">
             <div>
               <p class="kicker">Fault Codes</p>
-              <h3 class="section-title">故障代码</h3>
+              <h3 class="section-title">{{ pickLocaleText('故障代码', 'Fault codes') }}</h3>
             </div>
-            <button class="button button-success" type="button" @click="openFaultCodeModal">新建故障代码</button>
+            <button class="button button-success" type="button" @click="openFaultCodeModal">{{ pickLocaleText('新建故障代码', 'Create fault code') }}</button>
           </div>
 
-          <div v-if="!faultCodeDirectory.length" class="empty-state">当前还没有故障代码。</div>
+          <div v-if="!faultCodeDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有故障代码。', 'There are no fault codes yet.') }}</div>
 
           <div v-else class="entity-list">
             <article v-for="faultCode in faultCodeDirectory" :key="faultCode.id" class="entity-card">
@@ -705,10 +714,10 @@ onMounted(async () => {
                 </div>
                 <div class="action-row">
                   <button class="button button-ghost" type="button" @click="editFaultCode(faultCode)">
-                    编辑
+                    {{ pickLocaleText('编辑', 'Edit') }}
                   </button>
                   <button class="button button-danger" type="button" @click="removeFaultCode(faultCode.id)">
-                    删除
+                    {{ pickLocaleText('删除', 'Delete') }}
                   </button>
                 </div>
               </div>
@@ -722,15 +731,15 @@ onMounted(async () => {
           <div class="section-headline">
             <div>
               <p class="kicker">Spare Parts</p>
-              <h3 class="section-title">设备备件</h3>
+              <h3 class="section-title">{{ pickLocaleText('设备备件', 'Spare parts') }}</h3>
             </div>
             <div class="action-row">
-              <button class="button button-success" type="button" @click="openSparePartModal">新建备件</button>
-              <button class="button button-ghost" type="button" @click="openAutoPurchasePlaceholder">自动采购备件</button>
+              <button class="button button-success" type="button" @click="openSparePartModal">{{ pickLocaleText('新建备件', 'Create spare part') }}</button>
+              <button class="button button-ghost" type="button" @click="openAutoPurchasePlaceholder">{{ pickLocaleText('自动采购备件', 'Automatic purchasing') }}</button>
             </div>
           </div>
 
-          <div v-if="!sparePartDirectory.length" class="empty-state">当前还没有备件信息。</div>
+          <div v-if="!sparePartDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有备件信息。', 'There is no spare-part data yet.') }}</div>
 
           <div v-else class="entity-list">
             <article v-for="sparePart in sparePartDirectory" :key="sparePart.id" class="entity-card">
@@ -740,11 +749,11 @@ onMounted(async () => {
                   <p>{{ sparePart.description }}</p>
                 </div>
                 <div class="action-row">
-                  <span class="status-pill">库存 {{ sparePart.stockQuantity }} {{ sparePart.unit }}</span>
-                  <span class="status-pill status-pill-muted">安全库存 {{ sparePart.safetyStock }} {{ sparePart.unit }}</span>
-                  <button class="button button-ghost" type="button" @click="editSparePart(sparePart)">编辑</button>
+                  <span class="status-pill">{{ pickLocaleText(`库存 ${sparePart.stockQuantity} ${sparePart.unit}`, `Stock ${sparePart.stockQuantity} ${sparePart.unit}`) }}</span>
+                  <span class="status-pill status-pill-muted">{{ pickLocaleText(`安全库存 ${sparePart.safetyStock} ${sparePart.unit}`, `Safety stock ${sparePart.safetyStock} ${sparePart.unit}`) }}</span>
+                  <button class="button button-ghost" type="button" @click="editSparePart(sparePart)">{{ pickLocaleText('编辑', 'Edit') }}</button>
                   <button class="button button-danger" type="button" @click="removeSparePart(sparePart.id)">
-                    删除
+                    {{ pickLocaleText('删除', 'Delete') }}
                   </button>
                 </div>
               </div>
@@ -753,7 +762,7 @@ onMounted(async () => {
                 <span v-for="equipment in sparePart.equipments" :key="equipment.id" class="tag">
                   {{ equipment.equipmentCode }}
                 </span>
-                <span v-if="!sparePart.equipments.length" class="tag tag-muted">未关联设备</span>
+                <span v-if="!sparePart.equipments.length" class="tag tag-muted">{{ pickLocaleText('未关联设备', 'No linked equipment') }}</span>
               </div>
             </article>
           </div>
@@ -768,7 +777,7 @@ onMounted(async () => {
             <p class="kicker">Equipment Assets</p>
             <h3 class="section-title">{{ equipmentEditorTitle }}</h3>
           </div>
-          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeEquipmentModal">
+          <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('关闭弹出框', 'Close dialog')" @click="closeEquipmentModal">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path
                 d="M4 4l8 8M12 4l-8 8"
@@ -784,68 +793,68 @@ onMounted(async () => {
         <form class="form-grid" @submit.prevent="submitEquipment">
           <div class="form-two-column">
             <label>
-              <span>设备编号</span>
-              <input v-model="equipmentForm.equipmentCode" type="text" placeholder="例如 EQ-003" />
+              <span>{{ pickLocaleText('设备编号', 'Equipment code') }}</span>
+              <input v-model="equipmentForm.equipmentCode" type="text" :placeholder="pickLocaleText('例如 EQ-003', 'For example EQ-003')" />
             </label>
             <label>
-              <span>设备描述</span>
-              <input v-model="equipmentForm.description" type="text" placeholder="请输入设备描述" />
+              <span>{{ pickLocaleText('设备描述', 'Description') }}</span>
+              <input v-model="equipmentForm.description" type="text" :placeholder="pickLocaleText('请输入设备描述', 'Enter an equipment description')" />
             </label>
             <label>
-              <span>状态</span>
+              <span>{{ pickLocaleText('状态', 'Status') }}</span>
               <select v-model="equipmentForm.status">
-                <option v-for="status in STATUS_OPTIONS" :key="status" :value="status">{{ status }}</option>
+                <option v-for="status in STATUS_OPTIONS" :key="status" :value="status">{{ translateStaticText(status) }}</option>
               </select>
             </label>
             <label>
-              <span>有效期</span>
+              <span>{{ pickLocaleText('有效期', 'Valid until') }}</span>
               <input v-model="equipmentForm.validUntil" type="date" />
             </label>
             <label>
-              <span>设备类型</span>
-              <input v-model="equipmentForm.type" type="text" placeholder="例如 称量设备" />
+              <span>{{ pickLocaleText('设备类型', 'Equipment type') }}</span>
+              <input v-model="equipmentForm.type" type="text" :placeholder="pickLocaleText('例如 称量设备', 'For example Weighing device')" />
             </label>
             <label>
-              <span>设备型号</span>
-              <input v-model="equipmentForm.model" type="text" placeholder="例如 XPR205" />
+              <span>{{ pickLocaleText('设备型号', 'Model') }}</span>
+              <input v-model="equipmentForm.model" type="text" :placeholder="pickLocaleText('例如 XPR205', 'For example XPR205')" />
             </label>
             <label>
-              <span>设备位置</span>
-              <input v-model="equipmentForm.location" type="text" placeholder="例如 上海工厂-实验室A区" />
+              <span>{{ pickLocaleText('设备位置', 'Location') }}</span>
+              <input v-model="equipmentForm.location" type="text" :placeholder="pickLocaleText('例如 上海工厂-实验室A区', 'For example Shanghai Plant - Lab A')" />
             </label>
             <label>
-              <span>责任人</span>
+              <span>{{ pickLocaleText('责任人', 'Owner') }}</span>
               <select v-model="equipmentForm.ownerUserId">
-                <option value="">请选择责任人</option>
+                <option value="">{{ pickLocaleText('请选择责任人', 'Select an owner') }}</option>
                 <option v-for="owner in ownerOptions" :key="owner.id" :value="owner.id">
                   {{ owner.name }} / {{ owner.accountName }}
                 </option>
               </select>
             </label>
             <label>
-              <span>联系信息</span>
-              <input v-model="equipmentForm.contactInfo" type="text" placeholder="例如 张工程师 / 13800000003" />
+              <span>{{ pickLocaleText('联系信息', 'Contact') }}</span>
+              <input v-model="equipmentForm.contactInfo" type="text" :placeholder="pickLocaleText('例如 张工程师 / 13800000003', 'For example Engineer Zhang / 13800000003')" />
             </label>
             <label>
-              <span>购买日期</span>
+              <span>{{ pickLocaleText('购买日期', 'Purchase date') }}</span>
               <input v-model="equipmentForm.purchaseDate" type="date" />
             </label>
             <label>
-              <span>投运日期</span>
+              <span>{{ pickLocaleText('投运日期', 'Commissioning date') }}</span>
               <input v-model="equipmentForm.commissioningDate" type="date" />
             </label>
             <label>
-              <span>寿命期</span>
-              <input v-model="equipmentForm.serviceLife" type="text" placeholder="例如 10年" />
+              <span>{{ pickLocaleText('寿命期', 'Service life') }}</span>
+              <input v-model="equipmentForm.serviceLife" type="text" :placeholder="pickLocaleText('例如 10年', 'For example 10 years')" />
             </label>
             <label>
-              <span>点检频率（天）</span>
+              <span>{{ pickLocaleText('点检频率（天）', 'Inspection frequency (days)') }}</span>
               <input v-model="equipmentForm.inspectionFrequencyDays" type="number" min="1" />
             </label>
           </div>
 
           <fieldset class="selection-fieldset">
-            <legend>分配点检任务清单</legend>
+            <legend>{{ pickLocaleText('分配点检任务清单', 'Assign task lists') }}</legend>
             <div class="checkbox-grid">
               <label v-for="taskList in taskListDirectory" :key="taskList.id" class="choice-chip">
                 <input v-model="equipmentForm.taskListIds" type="checkbox" :value="taskList.id" />
@@ -855,19 +864,19 @@ onMounted(async () => {
           </fieldset>
 
           <fieldset class="selection-fieldset">
-            <legend>关联备件</legend>
+            <legend>{{ pickLocaleText('关联备件', 'Linked spare parts') }}</legend>
             <div class="checkbox-grid">
               <label v-for="sparePart in sparePartDirectory" :key="sparePart.id" class="choice-chip">
                 <input v-model="equipmentForm.sparePartIds" type="checkbox" :value="sparePart.id" />
-                <span>{{ sparePart.partNumber }} · 库存 {{ sparePart.stockQuantity }} {{ sparePart.unit }}</span>
+                <span>{{ pickLocaleText(`${sparePart.partNumber} · 库存 ${sparePart.stockQuantity} ${sparePart.unit}`, `${sparePart.partNumber} · Stock ${sparePart.stockQuantity} ${sparePart.unit}`) }}</span>
               </label>
             </div>
           </fieldset>
 
           <div class="modal-actions">
-            <button class="button button-ghost" type="button" @click="closeEquipmentModal">取消</button>
+            <button class="button button-ghost" type="button" @click="closeEquipmentModal">{{ pickLocaleText('取消', 'Cancel') }}</button>
             <button class="button button-success" type="submit" :disabled="isSubmitting">
-              {{ editingEquipmentId ? '保存设备' : '创建设备' }}
+              {{ editingEquipmentId ? pickLocaleText('保存设备', 'Save equipment') : pickLocaleText('创建设备', 'Create equipment') }}
             </button>
           </div>
         </form>
@@ -878,9 +887,9 @@ onMounted(async () => {
       <section class="surface-card modal-card qr-modal-card">
         <div class="section-headline modal-headline">
           <div>
-            <h3 class="section-title">{{ activeEquipmentQr?.equipmentCode || '设备编码二维码' }}</h3>
+            <h3 class="section-title">{{ activeEquipmentQr?.equipmentCode || pickLocaleText('设备编码二维码', 'Equipment QR code') }}</h3>
           </div>
-          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeEquipmentQrModal">
+          <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('关闭弹出框', 'Close dialog')" @click="closeEquipmentQrModal">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path
                 d="M4 4l8 8M12 4l-8 8"
@@ -895,14 +904,14 @@ onMounted(async () => {
 
         <div class="qr-preview">
           <div class="qr-preview__panel">
-            <div v-if="isGeneratingEquipmentQr" class="qr-preview__loading">二维码生成中...</div>
+            <div v-if="isGeneratingEquipmentQr" class="qr-preview__loading">{{ pickLocaleText('二维码生成中...', 'Generating QR code...') }}</div>
             <img
               v-else-if="equipmentQrCodeDataUrl"
               class="qr-preview__image"
               :src="equipmentQrCodeDataUrl"
-              :alt="`${activeEquipmentQr?.equipmentCode || '设备'}二维码`"
+              :alt="pickLocaleText(`${activeEquipmentQr?.equipmentCode || '设备'}二维码`, `${activeEquipmentQr?.equipmentCode || 'Equipment'} QR code`)"
             />
-            <div v-else class="qr-preview__loading">暂无可显示的二维码</div>
+            <div v-else class="qr-preview__loading">{{ pickLocaleText('暂无可显示的二维码', 'No QR code is available to display') }}</div>
           </div>
         </div>
 
@@ -913,9 +922,9 @@ onMounted(async () => {
             :href="equipmentQrCodeDataUrl"
             :download="`${activeEquipmentQr.equipmentCode}.png`"
           >
-            下载二维码
+            {{ pickLocaleText('下载二维码', 'Download QR code') }}
           </a>
-          <button class="button button-ghost" type="button" @click="closeEquipmentQrModal">关闭</button>
+          <button class="button button-ghost" type="button" @click="closeEquipmentQrModal">{{ pickLocaleText('关闭', 'Close') }}</button>
         </div>
       </section>
     </div>

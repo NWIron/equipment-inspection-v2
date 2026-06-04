@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { pickLocaleText, resolveFeatureText, resolveRoleName } from '../i18n'
 import { useAccessStore } from '../stores/access'
 import { goBackOrHome } from '../utils/navigation'
 
@@ -42,26 +43,26 @@ function goBack() {
             </svg>
           </button>
           <div class="page-header-copy">
-            <h2 class="page-title">{{ feature?.title || '模块未定义' }}</h2>
+            <h2 class="page-title">{{ feature ? resolveFeatureText(feature, 'title') : pickLocaleText('模块未定义', 'Module not defined') }}</h2>
           </div>
         </div>
       </div>
 
       <div class="metric-grid">
         <article class="metric-card">
-          <span class="metric-label">当前状态</span>
-          <strong class="metric-value">{{ feature?.phaseLabel || '未配置' }}</strong>
-          <p class="metric-detail">一期先保留标准化入口与信息架构。</p>
+          <span class="metric-label">{{ pickLocaleText('当前状态', 'Current status') }}</span>
+          <strong class="metric-value">{{ feature ? resolveFeatureText(feature, 'phaseLabel') : pickLocaleText('未配置', 'Not configured') }}</strong>
+          <p class="metric-detail">{{ pickLocaleText('一期先保留标准化入口与信息架构。', 'Phase 1 keeps the standardized entry point and information architecture in place.') }}</p>
         </article>
         <article class="metric-card">
-          <span class="metric-label">建议下一步</span>
-          <strong class="metric-value">细化业务模型</strong>
-          <p class="metric-detail">梳理字段、流程、状态机与报表需求。</p>
+          <span class="metric-label">{{ pickLocaleText('建议下一步', 'Recommended next step') }}</span>
+          <strong class="metric-value">{{ pickLocaleText('细化业务模型', 'Refine the business model') }}</strong>
+          <p class="metric-detail">{{ pickLocaleText('梳理字段、流程、状态机与报表需求。', 'Clarify fields, workflows, state transitions, and reporting requirements.') }}</p>
         </article>
       </div>
 
-      <div class="tag-row">
-        <span v-for="role in relatedRoles" :key="role.id" class="tag">{{ role.name }}</span>
+      <div class="tag-row" :aria-label="pickLocaleText('相关角色', 'Related roles')">
+        <span v-for="role in relatedRoles" :key="role.id" class="tag">{{ resolveRoleName(role) }}</span>
       </div>
     </section>
   </div>

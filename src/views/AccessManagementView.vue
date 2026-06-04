@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { pickLocaleText, resolveFeatureText, resolveRoleDescription, resolveRoleName, translateStaticText } from '../i18n'
 import { useAccessStore } from '../stores/access'
 import { useMessageToastStore } from '../stores/messageToast'
 import { goBackOrHome } from '../utils/navigation'
@@ -38,21 +39,25 @@ const users = computed(() => accessStore.userDirectory)
 const roles = computed(() => accessStore.roles)
 const isEditingUser = computed(() => Boolean(editingUserId.value))
 const isEditingRole = computed(() => Boolean(editingRoleId.value))
-const userModalTitle = computed(() => (isEditingUser.value ? '编辑用户' : '创建用户'))
-const roleModalTitle = computed(() => (isEditingRole.value ? '编辑角色' : '创建角色'))
+const userModalTitle = computed(() =>
+  isEditingUser.value ? pickLocaleText('编辑用户', 'Edit user') : pickLocaleText('创建用户', 'Create user'),
+)
+const roleModalTitle = computed(() =>
+  isEditingRole.value ? pickLocaleText('编辑角色', 'Edit role') : pickLocaleText('创建角色', 'Create role'),
+)
 const userSubmitLabel = computed(() => {
   if (isSavingUser.value) {
-    return isEditingUser.value ? '保存中...' : '创建中...'
+    return isEditingUser.value ? pickLocaleText('保存中...', 'Saving...') : pickLocaleText('创建中...', 'Creating...')
   }
 
-  return isEditingUser.value ? '保存修改' : '创建用户'
+  return isEditingUser.value ? pickLocaleText('保存修改', 'Save changes') : pickLocaleText('创建用户', 'Create user')
 })
 const roleSubmitLabel = computed(() => {
   if (isSavingRole.value) {
-    return isEditingRole.value ? '保存中...' : '创建中...'
+    return isEditingRole.value ? pickLocaleText('保存中...', 'Saving...') : pickLocaleText('创建中...', 'Creating...')
   }
 
-  return isEditingRole.value ? '保存修改' : '创建角色'
+  return isEditingRole.value ? pickLocaleText('保存修改', 'Save changes') : pickLocaleText('创建角色', 'Create role')
 })
 
 function openUserModal() {
@@ -172,7 +177,7 @@ async function removeRole(roleId) {
   <div class="page">
     <div class="page-header access-header">
       <div class="page-header-main">
-        <button class="button button-ghost button-icon" type="button" aria-label="返回上一页" @click="goBack">
+        <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('返回上一页', 'Go back')" @click="goBack">
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M9.5 3.5L5 8l4.5 4.5"
@@ -184,13 +189,13 @@ async function removeRole(roleId) {
           </svg>
         </button>
         <div class="page-header-copy">
-          <h2 class="page-title">用户与权限管理</h2>
+          <h2 class="page-title">{{ pickLocaleText('用户与权限管理', 'Users and Access') }}</h2>
         </div>
       </div>
     </div>
 
     <section class="surface-card section-card tab-card">
-      <div class="tab-bar" role="tablist" aria-label="Access management tabs">
+      <div class="tab-bar" role="tablist" :aria-label="pickLocaleText('权限管理分页', 'Access management tabs')">
         <button
           class="tab-button"
           :class="{ 'is-active': activeTab === 'users' }"
@@ -199,7 +204,7 @@ async function removeRole(roleId) {
           :aria-selected="activeTab === 'users'"
           @click="activeTab = 'users'"
         >
-          用户列表
+          {{ pickLocaleText('用户列表', 'Users') }}
         </button>
         <button
           class="tab-button"
@@ -209,7 +214,7 @@ async function removeRole(roleId) {
           :aria-selected="activeTab === 'roles'"
           @click="activeTab = 'roles'"
         >
-          角色列表
+          {{ pickLocaleText('角色列表', 'Roles') }}
         </button>
       </div>
 
@@ -217,10 +222,10 @@ async function removeRole(roleId) {
         <div class="section-headline">
           <div>
             <p class="kicker">User Directory</p>
-            <h3 class="section-title">用户列表（{{ users.length }}）</h3>
+            <h3 class="section-title">{{ pickLocaleText(`用户列表（${users.length}）`, `Users (${users.length})`) }}</h3>
           </div>
           <div class="action-row">
-            <button class="button button-success" type="button" @click="openUserModal">创建用户</button>
+            <button class="button button-success" type="button" @click="openUserModal">{{ pickLocaleText('创建用户', 'Create user') }}</button>
           </div>
         </div>
 
@@ -233,37 +238,37 @@ async function removeRole(roleId) {
               </div>
               <div class="action-row">
                 <button class="button button-ghost" type="button" @click="openUserEditModal(user)">
-                  编辑
+                  {{ pickLocaleText('编辑', 'Edit') }}
                 </button>
                 <button class="button button-ghost" type="button" @click="toggleUser(user.id)">
-                  {{ user.disabled ? '启用' : '禁用' }}
+                  {{ user.disabled ? pickLocaleText('启用', 'Enable') : pickLocaleText('禁用', 'Disable') }}
                 </button>
                 <button class="button button-danger" type="button" @click="removeUser(user.id)">
-                  删除
+                  {{ pickLocaleText('删除', 'Delete') }}
                 </button>
               </div>
             </div>
 
             <div class="user-item__meta">
               <div class="user-meta-block">
-                <span class="user-meta-label">用户状态</span>
+                <span class="user-meta-label">{{ pickLocaleText('用户状态', 'Status') }}</span>
                 <strong class="user-status" :class="user.disabled ? 'is-disabled' : 'is-enabled'">
                   <span class="user-status__dot"></span>
-                  {{ user.disabled ? '已禁用' : '已启用' }}
+                  {{ translateStaticText(user.disabled ? '已禁用' : '已启用') }}
                 </strong>
               </div>
               <div class="user-meta-block">
-                <span class="user-meta-label">手机号</span>
+                <span class="user-meta-label">{{ pickLocaleText('手机号', 'Phone') }}</span>
                 <strong>{{ user.phone }}</strong>
               </div>
               <div class="user-meta-block">
-                <span class="user-meta-label">最近登录</span>
-                <strong>{{ formatDateTimeDisplay(user.lastLoginAt, '未登录') }}</strong>
+                <span class="user-meta-label">{{ pickLocaleText('最近登录', 'Last login') }}</span>
+                <strong>{{ formatDateTimeDisplay(user.lastLoginAt, translateStaticText('未登录')) }}</strong>
               </div>
             </div>
 
             <div class="tag-row compact-tags">
-              <span v-for="role in user.roles" :key="role.id" class="tag">{{ role.name }}</span>
+              <span v-for="role in user.roles" :key="role.id" class="tag">{{ resolveRoleName(role) }}</span>
             </div>
           </article>
         </div>
@@ -273,10 +278,10 @@ async function removeRole(roleId) {
         <div class="section-headline">
           <div>
             <p class="kicker">Role Catalog</p>
-            <h3 class="section-title">角色列表</h3>
+            <h3 class="section-title">{{ pickLocaleText('角色列表', 'Roles') }}</h3>
           </div>
           <div class="action-row">
-            <button class="button button-success" type="button" @click="openRoleModal">创建角色</button>
+            <button class="button button-success" type="button" @click="openRoleModal">{{ pickLocaleText('创建角色', 'Create role') }}</button>
           </div>
         </div>
 
@@ -284,12 +289,12 @@ async function removeRole(roleId) {
           <article v-for="role in roles" :key="role.id" class="role-item">
             <div class="role-item__header">
               <div>
-                <h4>{{ role.name }}</h4>
-                <p>{{ role.description || '未填写角色说明。' }}</p>
+                <h4>{{ resolveRoleName(role) }}</h4>
+                <p>{{ resolveRoleDescription(role) || translateStaticText('未填写角色说明。') }}</p>
               </div>
               <div class="action-row">
                 <button class="button button-ghost" type="button" @click="openRoleEditModal(role)">
-                  编辑
+                  {{ pickLocaleText('编辑', 'Edit') }}
                 </button>
                 <button
                   v-if="!role.isSystem"
@@ -297,14 +302,14 @@ async function removeRole(roleId) {
                   type="button"
                   @click="removeRole(role.id)"
                 >
-                  删除角色
+                  {{ pickLocaleText('删除角色', 'Delete role') }}
                 </button>
               </div>
             </div>
 
             <div class="tag-row compact-tags">
               <span v-for="featureId in role.featureIds" :key="featureId" class="tag">
-                {{ accessStore.getFeatureById(featureId)?.title || featureId }}
+                {{ accessStore.getFeatureById(featureId) ? resolveFeatureText(accessStore.getFeatureById(featureId), 'title') : featureId }}
               </span>
             </div>
           </article>
@@ -319,7 +324,7 @@ async function removeRole(roleId) {
             <p class="kicker">Users</p>
             <h3 class="section-title">{{ userModalTitle }}</h3>
           </div>
-          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeUserModal">
+          <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('关闭弹出框', 'Close dialog')" @click="closeUserModal">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path
                 d="M4 4l8 8M12 4l-8 8"
@@ -334,47 +339,47 @@ async function removeRole(roleId) {
 
         <form class="form-grid" @submit.prevent="submitUser">
           <label>
-            <span>账号名</span>
-            <input v-model="userForm.accountName" type="text" placeholder="例如 inspector.wu" />
+            <span>{{ pickLocaleText('账号名', 'Account name') }}</span>
+            <input v-model="userForm.accountName" type="text" :placeholder="pickLocaleText('例如 inspector.wu', 'For example inspector.wu')" />
           </label>
 
           <label>
-            <span>姓名</span>
-            <input v-model="userForm.name" type="text" placeholder="请输入姓名" />
+            <span>{{ pickLocaleText('姓名', 'Name') }}</span>
+            <input v-model="userForm.name" type="text" :placeholder="pickLocaleText('请输入姓名', 'Enter a name')" />
           </label>
 
           <label>
-            <span>邮箱</span>
+            <span>{{ pickLocaleText('邮箱', 'Email') }}</span>
             <input v-model="userForm.email" type="email" placeholder="name@example.com" />
           </label>
 
           <label>
-            <span>手机号</span>
-            <input v-model="userForm.phone" type="tel" placeholder="请输入手机号" />
+            <span>{{ pickLocaleText('手机号', 'Phone') }}</span>
+            <input v-model="userForm.phone" type="tel" :placeholder="pickLocaleText('请输入手机号', 'Enter a phone number')" />
           </label>
 
           <label>
-            <span>密码</span>
+            <span>{{ pickLocaleText('密码', 'Password') }}</span>
             <input
               v-model="userForm.password"
               type="password"
-              :placeholder="isEditingUser ? '编辑主数据时无需修改密码' : '至少 6 位'"
+              :placeholder="isEditingUser ? pickLocaleText('编辑主数据时无需修改密码', 'Password updates are not required when editing user data') : pickLocaleText('至少 6 位', 'At least 6 characters')"
               :disabled="isEditingUser"
             />
           </label>
 
           <fieldset class="selection-fieldset">
-            <legend>角色分配</legend>
+            <legend>{{ pickLocaleText('角色分配', 'Role assignment') }}</legend>
             <div class="checkbox-grid">
               <label v-for="role in roles" :key="role.id" class="choice-chip">
                 <input v-model="userForm.roleIds" type="checkbox" :value="role.id" />
-                <span>{{ role.name }}</span>
+                <span>{{ resolveRoleName(role) }}</span>
               </label>
             </div>
           </fieldset>
 
           <div class="modal-actions">
-            <button class="button button-ghost" type="button" @click="closeUserModal">取消</button>
+            <button class="button button-ghost" type="button" @click="closeUserModal">{{ pickLocaleText('取消', 'Cancel') }}</button>
             <button class="button button-success" type="submit" :disabled="isSavingUser">{{ userSubmitLabel }}</button>
           </div>
         </form>
@@ -388,7 +393,7 @@ async function removeRole(roleId) {
             <p class="kicker">Roles</p>
             <h3 class="section-title">{{ roleModalTitle }}</h3>
           </div>
-          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeRoleModal">
+          <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('关闭弹出框', 'Close dialog')" @click="closeRoleModal">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path
                 d="M4 4l8 8M12 4l-8 8"
@@ -403,31 +408,31 @@ async function removeRole(roleId) {
 
         <form class="form-grid" @submit.prevent="submitRole">
           <label>
-            <span>角色名称</span>
-            <input v-model="roleForm.name" type="text" placeholder="例如 班组长" />
+            <span>{{ pickLocaleText('角色名称', 'Role name') }}</span>
+            <input v-model="roleForm.name" type="text" :placeholder="pickLocaleText('例如 班组长', 'For example Team Lead')" />
           </label>
 
           <label>
-            <span>角色说明</span>
+            <span>{{ pickLocaleText('角色说明', 'Role description') }}</span>
             <textarea
               v-model="roleForm.description"
               rows="4"
-              placeholder="简述角色职责与适用范围"
+              :placeholder="pickLocaleText('简述角色职责与适用范围', 'Summarize the role responsibilities and scope')"
             ></textarea>
           </label>
 
           <fieldset class="selection-fieldset">
-            <legend>可使用的功能卡片</legend>
+            <legend>{{ pickLocaleText('可使用的功能卡片', 'Available feature cards') }}</legend>
             <div class="checkbox-grid">
               <label v-for="feature in accessStore.featureCatalog" :key="feature.id" class="choice-chip">
                 <input v-model="roleForm.featureIds" type="checkbox" :value="feature.id" />
-                <span>{{ feature.title }}</span>
+                <span>{{ resolveFeatureText(feature, 'title') }}</span>
               </label>
             </div>
           </fieldset>
 
           <div class="modal-actions">
-            <button class="button button-ghost" type="button" @click="closeRoleModal">取消</button>
+            <button class="button button-ghost" type="button" @click="closeRoleModal">{{ pickLocaleText('取消', 'Cancel') }}</button>
             <button class="button button-success" type="submit" :disabled="isSavingRole">{{ roleSubmitLabel }}</button>
           </div>
         </form>

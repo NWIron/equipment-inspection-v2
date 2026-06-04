@@ -1,6 +1,8 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
+import { pickLocaleText } from '../i18n'
+
 async function requestWorkOrderApi(path, init = {}) {
   try {
     const response = await fetch(path, {
@@ -14,13 +16,13 @@ async function requestWorkOrderApi(path, init = {}) {
 
     const payload = await response.json().catch(() => ({
       ok: false,
-      message: '服务返回了无法识别的响应。',
+      message: pickLocaleText('服务返回了无法识别的响应。', 'The service returned an unreadable response.'),
     }))
 
     if (!response.ok) {
       return {
         ok: false,
-        message: payload.message || '请求失败，请稍后重试。',
+        message: payload.message || pickLocaleText('请求失败，请稍后重试。', 'The request failed. Please try again later.'),
       }
     }
 
@@ -28,7 +30,10 @@ async function requestWorkOrderApi(path, init = {}) {
   } catch {
     return {
       ok: false,
-      message: '无法连接维修工单服务，请确认 Cloudflare Pages Functions 与 D1 已完成初始化。',
+      message: pickLocaleText(
+        '无法连接维修工单服务，请确认 Cloudflare Pages Functions 与 D1 已完成初始化。',
+        'Unable to connect to the work-order service. Confirm that Cloudflare Pages Functions and D1 have been initialized.',
+      ),
     }
   }
 }

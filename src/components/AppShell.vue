@@ -1,13 +1,16 @@
 <script setup>
 import QrScanner from 'qr-scanner'
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
+import { setLocale, SUPPORTED_LOCALES } from '../i18n'
 import { useAccessStore } from '../stores/access'
 import { useMessageToastStore } from '../stores/messageToast'
 
 const route = useRoute()
 const router = useRouter()
+const { locale, t } = useI18n()
 const accessStore = useAccessStore()
 const toastStore = useMessageToastStore()
 const isLoggingOut = ref(false)
@@ -18,7 +21,17 @@ const scanVideoElement = ref(null)
 
 let qrScanner = null
 
-const currentRoleLabel = computed(() => accessStore.activeRoles.map((role) => role.name).join(' / '))
+const localeOptions = SUPPORTED_LOCALES.map((value) => ({
+  value,
+  labelKey: `common.localeShort.${value}`,
+}))
+
+const currentRoleLabel = computed(() =>
+  accessStore.activeRoles
+    .map((role) => (role.nameKey ? t(role.nameKey) : role.name))
+    .filter(Boolean)
+    .join(' / '),
+)
 const canScanInspectionTasks = computed(() => accessStore.canAccessFeature('inspection-tasks'))
 const showMobileScanButton = computed(() => route.name === 'home' && canScanInspectionTasks.value)
 
@@ -54,7 +67,7 @@ async function handleScanResult(result) {
 
   if (!equipmentCode) {
     isHandlingScan.value = false
-    toastStore.show('二维码中未识别到设备编码，请重新扫描。', 'error')
+    toastStore.show(t('shell.scanErrors.invalidCode'), 'error')
     return
   }
 
@@ -81,14 +94,14 @@ async function openScanModal() {
     const hasCamera = await QrScanner.hasCamera()
 
     if (!hasCamera) {
-      throw new Error('当前设备未检测到可用摄像头。')
+      throw new Error(t('shell.scanErrors.noCamera'))
     }
 
     isScanModalOpen.value = true
     await nextTick()
 
     if (!scanVideoElement.value) {
-      throw new Error('无法打开扫码界面，请重试。')
+      throw new Error(t('shell.scanErrors.openFailed'))
     }
 
     destroyScanner()
@@ -102,10 +115,14 @@ async function openScanModal() {
     await qrScanner.start()
   } catch (error) {
     closeScanModal()
-    toastStore.show(error instanceof Error ? error.message : '打开扫码失败，请稍后重试。', 'error')
+    toastStore.show(error instanceof Error ? error.message : t('shell.scanErrors.openFailedGeneric'), 'error')
   } finally {
     isStartingScan.value = false
   }
+}
+
+function switchLocale(nextLocale) {
+  setLocale(nextLocale)
 }
 
 async function handleLogout() {
@@ -133,7 +150,7 @@ onBeforeUnmount(() => {
     <header class="shell-header">
       <div class="shell-header__row">
         <div class="shell-brand">
-          <RouterLink class="shell-home" :to="{ name: 'home' }" aria-label="主页">
+          <RouterLink class="shell-home" :to="{ name: 'home' }" :aria-label="t('shell.home')">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path
                 d="M2.75 6.75L8 2.5l5.25 4.25"
@@ -164,16 +181,28 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="user-panel">
+          <div class="locale-switcher" :aria-label="t('common.localeLabel')">
+            <button
+              v-for="option in localeOptions"
+              :key="option.value"
+              class="locale-switcher__button"
+              :class="{ 'locale-switcher__button--active': locale === option.value }"
+              type="button"
+              @click="switchLocale(option.value)"
+            >
+              {{ t(option.labelKey) }}
+            </button>
+          </div>
           <div class="user-summary">
             <p class="user-name">{{ accessStore.activeUser?.name }}</p>
-            <p class="user-role">{{ currentRoleLabel || '未分配角色' }}</p>
+            <p class="user-role">{{ currentRoleLabel || t('common.unassignedRole') }}</p>
           </div>
           <button
             v-if="showMobileScanButton"
             class="shell-scan"
             type="button"
             :disabled="isStartingScan"
-            :aria-label="isStartingScan ? '扫码启动中' : '扫描设备二维码'"
+            :aria-label="isStartingScan ? t('shell.startingScan') : t('shell.startScan')"
             @click="openScanModal"
           >
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -218,7 +247,7 @@ onBeforeUnmount(() => {
             class="shell-signout"
             type="button"
             :disabled="isLoggingOut"
-            :aria-label="isLoggingOut ? '退出中' : '退出登录'"
+            :aria-label="isLoggingOut ? t('shell.signingOut') : t('shell.signOut')"
             @click="handleLogout"
           >
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -244,7 +273,7 @@ onBeforeUnmount(() => {
                 stroke-width="1.4"
               />
             </svg>
-            <span class="shell-signout__label">{{ isLoggingOut ? '退出中...' : '退出登录' }}</span>
+            <span class="shell-signout__label">{{ isLoggingOut ? t('shell.signingOutLabel') : t('shell.signOut') }}</span>
           </button>
         </div>
       </div>
@@ -255,17 +284,17 @@ onBeforeUnmount(() => {
     </main>
 
     <footer class="shell-footer">
-      <p class="shell-footer__copy">© 2026 METTLER TOLEDO, Inc.</p>
+      <p class="shell-footer__copy">{{ t('shell.footer') }}</p>
     </footer>
 
     <div v-if="isScanModalOpen" class="scan-modal" @click.self="closeScanModal">
       <section class="scan-modal__card">
         <div class="scan-modal__header">
           <div>
-            <p class="scan-modal__kicker">QR Scan</p>
-            <h2 class="scan-modal__title">扫描设备二维码</h2>
+            <p class="scan-modal__kicker">{{ t('shell.scanKicker') }}</p>
+            <h2 class="scan-modal__title">{{ t('shell.scanTitle') }}</h2>
           </div>
-          <button class="shell-scan shell-scan--modal" type="button" aria-label="关闭扫码" @click="closeScanModal">
+          <button class="shell-scan shell-scan--modal" type="button" :aria-label="t('shell.closeScan')" @click="closeScanModal">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path
                 d="M4 4l8 8M12 4l-8 8"
@@ -281,7 +310,7 @@ onBeforeUnmount(() => {
           <video ref="scanVideoElement" class="scan-modal__video" autoplay playsinline muted></video>
           <div class="scan-modal__frame" aria-hidden="true"></div>
         </div>
-        <p class="scan-modal__hint">请将设备编码二维码置于取景框内，识别后将自动进入对应点检任务或打开新建点检任务。</p>
+        <p class="scan-modal__hint">{{ t('shell.scanHint') }}</p>
       </section>
     </div>
   </div>
@@ -363,6 +392,32 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   justify-content: flex-end;
+
+.locale-switcher {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.locale-switcher__button {
+  min-width: 44px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.locale-switcher__button--active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
   flex-shrink: 0;
 }
 

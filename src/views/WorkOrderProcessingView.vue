@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { pickLocaleText, translateStaticText } from '../i18n'
 import { useWorkOrderStore } from '../stores/workOrders'
 import { useMessageToastStore } from '../stores/messageToast'
 import { goBackOrHome } from '../utils/navigation'
@@ -45,7 +46,9 @@ const isConfirmed = computed(() => Boolean(workOrder.value?.confirmedAt))
 const engineerOptions = computed(() => workOrderStore.engineerOptions)
 const sparePartOptions = computed(() => workOrderStore.sparePartOptions)
 const taskStatusOptions = computed(() => workOrderStore.taskStatusOptions)
-const taskModalTitle = computed(() => (editingTaskId.value ? '编辑维修任务' : '创建维修任务'))
+const taskModalTitle = computed(() =>
+  editingTaskId.value ? pickLocaleText('编辑维修任务', 'Edit maintenance task') : pickLocaleText('创建维修任务', 'Create maintenance task'),
+)
 const selectableSpareParts = computed(() => {
   const selectedIds = new Set(sparePartsForm.value.map((item) => item.sparePartId))
   return sparePartOptions.value.filter((item) => !selectedIds.has(item.id))
@@ -143,12 +146,12 @@ async function handlePhotoSelection(event) {
   const remainingCount = MAX_PHOTO_COUNT - workOrderPhotos.value.length
 
   if (remainingCount <= 0) {
-    setFeedback(`维修现场照片最多上传 ${MAX_PHOTO_COUNT} 张。`, 'error')
+    setFeedback(pickLocaleText(`维修现场照片最多上传 ${MAX_PHOTO_COUNT} 张。`, `You can upload up to ${MAX_PHOTO_COUNT} maintenance photos.`), 'error')
     return
   }
 
   if (files.length > remainingCount) {
-    setFeedback(`超出数量上限，仅会保留前 ${remainingCount} 张新照片。`, 'info')
+    setFeedback(pickLocaleText(`超出数量上限，仅会保留前 ${remainingCount} 张新照片。`, `The limit was exceeded. Only the first ${remainingCount} new photos will be kept.`), 'info')
   }
 
   isProcessingPhotos.value = true
@@ -162,7 +165,7 @@ async function handlePhotoSelection(event) {
 
     workOrderPhotos.value.push(...newPhotos)
   } catch (error) {
-    setFeedback(error instanceof Error ? error.message : '处理照片失败，请重试。', 'error')
+    setFeedback(error instanceof Error ? error.message : pickLocaleText('处理照片失败，请重试。', 'Failed to process the photo. Please try again.'), 'error')
   } finally {
     isProcessingPhotos.value = false
   }
@@ -321,7 +324,7 @@ onMounted(loadWorkOrder)
   <div class="page work-order-processing-page">
     <div class="page-header">
       <div class="page-header-main">
-        <button class="button button-ghost button-icon" type="button" aria-label="返回上一页" @click="goBack">
+        <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('返回上一页', 'Go back')" @click="goBack">
           <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M9.5 3.5L5 8l4.5 4.5"
@@ -333,13 +336,13 @@ onMounted(loadWorkOrder)
           </svg>
         </button>
         <div class="page-header-copy">
-          <h2 class="page-title">维修工单处理</h2>
+          <h2 class="page-title">{{ pickLocaleText('维修工单处理', 'Work Order Processing') }}</h2>
         </div>
       </div>
     </div>
 
-    <div v-if="workOrderStore.isLoadingWorkOrder" class="notice">正在加载维修工单详情...</div>
-    <div v-else-if="!workOrder" class="empty-state">未找到维修工单。</div>
+    <div v-if="workOrderStore.isLoadingWorkOrder" class="notice">{{ pickLocaleText('正在加载维修工单详情...', 'Loading work-order details...') }}</div>
+    <div v-else-if="!workOrder" class="empty-state">{{ pickLocaleText('未找到维修工单。', 'Work order not found.') }}</div>
 
     <template v-else>
       <section class="surface-card section-card">
@@ -350,77 +353,77 @@ onMounted(loadWorkOrder)
           </div>
           <div class="action-row">
             <button class="button button-success" type="button" :disabled="isConfirmed || isSavingSpareParts" @click="saveWorkOrder">
-              {{ isSavingSpareParts ? '保存中...' : '保存工单' }}
+              {{ isSavingSpareParts ? pickLocaleText('保存中...', 'Saving...') : pickLocaleText('保存工单', 'Save work order') }}
             </button>
-            <button class="button" type="button" :disabled="!workOrder.canConfirm" @click="openConfirmModal">确认工单</button>
+            <button class="button" type="button" :disabled="!workOrder.canConfirm" @click="openConfirmModal">{{ pickLocaleText('确认工单', 'Confirm work order') }}</button>
             <button class="button button-danger" type="button" :disabled="!workOrder.canDelete" @click="removeWorkOrder">
-              删除工单
+              {{ pickLocaleText('删除工单', 'Delete work order') }}
             </button>
           </div>
         </div>
 
         <div class="entity-meta-grid">
           <div class="entity-meta-block">
-            <span class="entity-meta-label">工单状态</span>
+            <span class="entity-meta-label">{{ pickLocaleText('工单状态', 'Status') }}</span>
             <strong class="task-status" :class="getWorkOrderStatusClass(workOrder.status)">
               <span class="task-status__dot"></span>
-              {{ workOrder.status }}
+              {{ translateStaticText(workOrder.status) }}
             </strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">确认时间</span>
+            <span class="entity-meta-label">{{ pickLocaleText('确认时间', 'Confirmed at') }}</span>
             <strong>{{ formatDateTimeDisplay(workOrder.confirmedAt) }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">来源点检任务</span>
+            <span class="entity-meta-label">{{ pickLocaleText('来源点检任务', 'Source inspection task') }}</span>
             <strong v-if="workOrder.sourceInspectionTask">
               <RouterLink
                 class="inline-link"
                 :to="{ name: 'inspection-task-execution', params: { taskId: workOrder.sourceInspectionTask.id } }"
               >
-                {{ workOrder.sourceInspectionTask.taskNumber || '无' }}
+                {{ workOrder.sourceInspectionTask.taskNumber || translateStaticText('无') }}
               </RouterLink>
             </strong>
-            <strong v-else>无</strong>
+            <strong v-else>{{ pickLocaleText('无', 'None') }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">任务进度</span>
+            <span class="entity-meta-label">{{ pickLocaleText('任务进度', 'Task progress') }}</span>
             <strong>{{ workOrder.finishedTaskCount }} / {{ workOrder.taskCount }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">设备</span>
+            <span class="entity-meta-label">{{ pickLocaleText('设备', 'Equipment') }}</span>
             <strong>
-              {{ workOrder.equipment?.equipmentCode || '未关联设备' }} ·
-              {{ workOrder.equipment?.description || '未填写设备描述' }}
+              {{ workOrder.equipment?.equipmentCode || translateStaticText('未关联设备') }} ·
+              {{ workOrder.equipment?.description || translateStaticText('未填写设备描述') }}
             </strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">设备位置</span>
-            <strong>{{ workOrder.equipment?.location || '未配置位置' }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('设备位置', 'Location') }}</span>
+            <strong>{{ workOrder.equipment?.location || pickLocaleText('未配置位置', 'Location not configured') }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">故障代码</span>
-            <strong>{{ workOrder.faultCode?.code || '无' }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('故障代码', 'Fault code') }}</span>
+            <strong>{{ workOrder.faultCode?.code || translateStaticText('无') }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">故障描述</span>
-            <strong>{{ workOrder.faultCode?.description || '无' }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('故障描述', 'Fault description') }}</span>
+            <strong>{{ workOrder.faultCode?.description || translateStaticText('无') }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">优先级</span>
-            <strong>{{ workOrder.priority }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('优先级', 'Priority') }}</span>
+            <strong>{{ translateStaticText(workOrder.priority) }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">创建时间</span>
+            <span class="entity-meta-label">{{ pickLocaleText('创建时间', 'Created at') }}</span>
             <strong>{{ formatDateTimeDisplay(workOrder.createdAt) }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">创建人</span>
-            <strong>{{ workOrder.creator?.name || '未分配' }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('创建人', 'Created by') }}</span>
+            <strong>{{ workOrder.creator?.name || translateStaticText('未分配') }}</strong>
           </div>
           <div class="entity-meta-block">
-            <span class="entity-meta-label">联系方式</span>
-            <strong>{{ workOrder.creatorContact || workOrder.creator?.contactLabel || '未填写' }}</strong>
+            <span class="entity-meta-label">{{ pickLocaleText('联系方式', 'Contact') }}</span>
+            <strong>{{ workOrder.creatorContact || workOrder.creator?.contactLabel || translateStaticText('未填写') }}</strong>
           </div>
         </div>
       </section>
@@ -429,7 +432,7 @@ onMounted(loadWorkOrder)
         <div class="section-headline">
           <div>
             <p class="kicker">Work Order Photos</p>
-            <h3 class="section-title">维修现场照片</h3>
+            <h3 class="section-title">{{ pickLocaleText('维修现场照片', 'Maintenance photos') }}</h3>
           </div>
           <label
             class="button button-ghost photo-upload-trigger"
@@ -444,21 +447,21 @@ onMounted(loadWorkOrder)
               :disabled="isConfirmed || isProcessingPhotos || workOrderPhotos.length >= MAX_PHOTO_COUNT"
               @change="handlePhotoSelection"
             />
-            {{ isProcessingPhotos ? '处理中...' : '拍照上传照片' }}
+            {{ isProcessingPhotos ? pickLocaleText('处理中...', 'Processing...') : pickLocaleText('拍照上传照片', 'Capture and upload') }}
           </label>
         </div>
 
-        <p class="photo-field__hint">支持手机拍照上传，照片会在保存工单或确认工单时一并保存，最多 {{ MAX_PHOTO_COUNT }} 张。</p>
+        <p class="photo-field__hint">{{ pickLocaleText(`支持手机拍照上传，照片会在保存工单或确认工单时一并保存，最多 ${MAX_PHOTO_COUNT} 张。`, `You can upload mobile photos. Photos are saved together when the work order is saved or confirmed, up to ${MAX_PHOTO_COUNT} photos.`) }}</p>
 
-        <div v-if="!workOrderPhotos.length" class="photo-empty-state">当前还没有上传维修现场照片。</div>
+        <div v-if="!workOrderPhotos.length" class="photo-empty-state">{{ pickLocaleText('当前还没有上传维修现场照片。', 'No maintenance photos have been uploaded yet.') }}</div>
 
         <div v-else class="photo-grid">
           <article v-for="(photo, index) in workOrderPhotos" :key="photo.id || `${photo.fileName}-${index}`" class="photo-card">
-            <img class="photo-card__image" :src="photo.photoData" :alt="photo.fileName || `维修现场照片 ${index + 1}`" />
+            <img class="photo-card__image" :src="photo.photoData" :alt="photo.fileName || pickLocaleText(`维修现场照片 ${index + 1}`, `Maintenance photo ${index + 1}`)" />
             <div class="photo-card__footer">
-              <span class="photo-card__name">{{ photo.fileName || `维修现场照片 ${index + 1}` }}</span>
+              <span class="photo-card__name">{{ photo.fileName || pickLocaleText(`维修现场照片 ${index + 1}`, `Maintenance photo ${index + 1}`) }}</span>
               <button class="button button-danger" type="button" :disabled="isConfirmed" @click="removePhoto(index)">
-                删除
+                {{ pickLocaleText('删除', 'Delete') }}
               </button>
             </div>
           </article>
@@ -469,25 +472,25 @@ onMounted(loadWorkOrder)
         <div class="section-headline">
           <div>
             <p class="kicker">Spare Parts</p>
-            <h3 class="section-title">备件消耗清单</h3>
+            <h3 class="section-title">{{ pickLocaleText('备件消耗清单', 'Spare-part consumption') }}</h3>
           </div>
           <button class="button button-ghost" type="button" :disabled="isConfirmed || !selectableSpareParts.length" @click="openSparePartModal">
-            新增备件
+            {{ pickLocaleText('新增备件', 'Add spare parts') }}
           </button>
         </div>
 
-        <div v-if="!sparePartsForm.length" class="empty-state">当前维修工单没有备件，请从上方下拉框新增。</div>
+        <div v-if="!sparePartsForm.length" class="empty-state">{{ pickLocaleText('当前维修工单没有备件，请从上方下拉框新增。', 'This work order has no spare parts yet. Add them from the selector above.') }}</div>
 
         <div v-else class="spare-part-table-wrap">
           <table class="spare-part-table">
             <thead>
               <tr>
-                <th>备件编号</th>
-                <th>备件描述</th>
-                <th>单位</th>
-                <th>当前库存</th>
-                <th>消耗数量</th>
-                <th>操作</th>
+                <th>{{ pickLocaleText('备件编号', 'Part number') }}</th>
+                <th>{{ pickLocaleText('备件描述', 'Description') }}</th>
+                <th>{{ pickLocaleText('单位', 'Unit') }}</th>
+                <th>{{ pickLocaleText('当前库存', 'Current stock') }}</th>
+                <th>{{ pickLocaleText('消耗数量', 'Consumed') }}</th>
+                <th>{{ pickLocaleText('操作', 'Actions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -501,7 +504,7 @@ onMounted(loadWorkOrder)
                 </td>
                 <td>
                   <button class="button button-danger" type="button" :disabled="isConfirmed" @click="removeSparePart(sparePart.sparePartId)">
-                    删除
+                    {{ pickLocaleText('删除', 'Delete') }}
                   </button>
                 </td>
               </tr>
@@ -514,42 +517,42 @@ onMounted(loadWorkOrder)
         <div class="section-headline">
           <div>
             <p class="kicker">Maintenance Tasks</p>
-            <h3 class="section-title">维修任务</h3>
+            <h3 class="section-title">{{ pickLocaleText('维修任务', 'Maintenance tasks') }}</h3>
           </div>
           <button class="button button-success" type="button" :disabled="isConfirmed" @click="openTaskModal">
-            创建维修任务
+            {{ pickLocaleText('创建维修任务', 'Create maintenance task') }}
           </button>
         </div>
 
-        <div v-if="!workOrder.tasks.length" class="empty-state">当前还没有维修任务。</div>
+        <div v-if="!workOrder.tasks.length" class="empty-state">{{ pickLocaleText('当前还没有维修任务。', 'There are no maintenance tasks yet.') }}</div>
 
         <div v-else class="entity-list">
           <article v-for="task in workOrder.tasks" :key="task.id" class="entity-card">
             <div class="entity-card__header">
               <div>
                 <h4>{{ task.taskName }}</h4>
-                <p>{{ task.engineer?.name || '未分配工程师' }} · {{ task.engineer?.contactLabel || '' }}</p>
+                <p>{{ task.engineer?.name || translateStaticText('未分配工程师') }} · {{ task.engineer?.contactLabel || '' }}</p>
               </div>
               <div class="action-row">
-                <button class="button button-ghost" type="button" :disabled="isConfirmed" @click="editTask(task)">编辑</button>
-                <button class="button button-danger" type="button" :disabled="isConfirmed" @click="removeTask(task.id)">删除</button>
+                <button class="button button-ghost" type="button" :disabled="isConfirmed" @click="editTask(task)">{{ pickLocaleText('编辑', 'Edit') }}</button>
+                <button class="button button-danger" type="button" :disabled="isConfirmed" @click="removeTask(task.id)">{{ pickLocaleText('删除', 'Delete') }}</button>
               </div>
             </div>
 
             <div class="entity-meta-grid">
               <div class="entity-meta-block">
-                <span class="entity-meta-label">任务状态</span>
+                <span class="entity-meta-label">{{ pickLocaleText('任务状态', 'Task status') }}</span>
                 <strong class="task-status" :class="getTaskStatusClass(task.status)">
                   <span class="task-status__dot"></span>
-                  {{ task.status }}
+                  {{ translateStaticText(task.status) }}
                 </strong>
               </div>
               <div class="entity-meta-block">
-                <span class="entity-meta-label">创建时间</span>
+                <span class="entity-meta-label">{{ pickLocaleText('创建时间', 'Created at') }}</span>
                 <strong>{{ formatDateTimeDisplay(task.createdAt) }}</strong>
               </div>
               <div class="entity-meta-block">
-                <span class="entity-meta-label">最后更新</span>
+                <span class="entity-meta-label">{{ pickLocaleText('最后更新', 'Last updated') }}</span>
                 <strong>{{ formatDateTimeDisplay(task.updatedAt) }}</strong>
               </div>
             </div>
@@ -564,7 +567,7 @@ onMounted(loadWorkOrder)
               <p class="kicker">Maintenance Tasks</p>
               <h3 class="section-title">{{ taskModalTitle }}</h3>
             </div>
-            <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeTaskModal">
+            <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('关闭弹出框', 'Close dialog')" @click="closeTaskModal">
               <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path
                   d="M4 4l8 8M12 4l-8 8"
@@ -579,14 +582,14 @@ onMounted(loadWorkOrder)
 
           <form class="form-grid" @submit.prevent="submitTask">
             <label>
-              <span>任务名称</span>
-              <input v-model="taskForm.taskName" type="text" placeholder="例如 更换传感器探头" />
+              <span>{{ pickLocaleText('任务名称', 'Task name') }}</span>
+              <input v-model="taskForm.taskName" type="text" :placeholder="pickLocaleText('例如 更换传感器探头', 'For example Replace the sensor probe')" />
             </label>
 
             <label>
-              <span>维修工程师</span>
+              <span>{{ pickLocaleText('维修工程师', 'Engineer') }}</span>
               <select v-model="taskForm.engineerUserId">
-                <option value="">请选择维修工程师</option>
+                <option value="">{{ pickLocaleText('请选择维修工程师', 'Select an engineer') }}</option>
                 <option v-for="engineer in engineerOptions" :key="engineer.id" :value="engineer.id">
                   {{ engineer.name }} / {{ engineer.accountName }}
                 </option>
@@ -594,16 +597,16 @@ onMounted(loadWorkOrder)
             </label>
 
             <label>
-              <span>任务状态</span>
+              <span>{{ pickLocaleText('任务状态', 'Task status') }}</span>
               <select v-model="taskForm.status">
-                <option v-for="status in taskStatusOptions" :key="status" :value="status">{{ status }}</option>
+                <option v-for="status in taskStatusOptions" :key="status" :value="status">{{ translateStaticText(status) }}</option>
               </select>
             </label>
 
             <div class="modal-actions">
-              <button class="button button-ghost" type="button" @click="closeTaskModal">取消</button>
+              <button class="button button-ghost" type="button" @click="closeTaskModal">{{ pickLocaleText('取消', 'Cancel') }}</button>
               <button class="button button-success" type="submit" :disabled="isSubmittingTask">
-                {{ editingTaskId ? '保存维修任务' : '创建维修任务' }}
+                {{ editingTaskId ? pickLocaleText('保存维修任务', 'Save maintenance task') : pickLocaleText('创建维修任务', 'Create maintenance task') }}
               </button>
             </div>
           </form>
@@ -615,9 +618,9 @@ onMounted(loadWorkOrder)
           <div class="section-headline modal-headline">
             <div>
               <p class="kicker">Spare Parts</p>
-              <h3 class="section-title">新增备件</h3>
+              <h3 class="section-title">{{ pickLocaleText('新增备件', 'Add spare parts') }}</h3>
             </div>
-            <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeSparePartModal">
+            <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('关闭弹出框', 'Close dialog')" @click="closeSparePartModal">
               <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path
                   d="M4 4l8 8M12 4l-8 8"
@@ -632,12 +635,12 @@ onMounted(loadWorkOrder)
 
           <div class="form-grid">
             <label>
-              <span>模糊查询</span>
-              <input v-model="sparePartSearchKeyword" type="text" placeholder="输入备件编号、描述或单位" />
+              <span>{{ pickLocaleText('模糊查询', 'Search') }}</span>
+              <input v-model="sparePartSearchKeyword" type="text" :placeholder="pickLocaleText('输入备件编号、描述或单位', 'Enter a part number, description, or unit')" />
             </label>
 
             <div v-if="!filteredSelectableSpareParts.length" class="empty-state spare-part-modal-empty">
-              {{ selectableSpareParts.length ? '没有匹配的备件。' : '没有可新增的备件。' }}
+              {{ selectableSpareParts.length ? pickLocaleText('没有匹配的备件。', 'No spare parts matched the search.') : pickLocaleText('没有可新增的备件。', 'There are no spare parts available to add.') }}
             </div>
 
             <div v-else class="spare-part-picker-list">
@@ -646,15 +649,15 @@ onMounted(loadWorkOrder)
                 <div>
                   <strong>{{ sparePart.partNumber }}</strong>
                   <p>{{ sparePart.description }}</p>
-                  <span>库存 {{ sparePart.stockQuantity }} {{ sparePart.unit }}</span>
+                  <span>{{ pickLocaleText(`库存 ${sparePart.stockQuantity} ${sparePart.unit}`, `Stock ${sparePart.stockQuantity} ${sparePart.unit}`) }}</span>
                 </div>
               </label>
             </div>
 
             <div class="modal-actions">
-              <button class="button button-ghost" type="button" @click="closeSparePartModal">取消</button>
+              <button class="button button-ghost" type="button" @click="closeSparePartModal">{{ pickLocaleText('取消', 'Cancel') }}</button>
               <button class="button button-success" type="button" :disabled="!selectedSparePartIds.length" @click="submitSparePartSelection">
-                添加已选备件
+                {{ pickLocaleText('添加已选备件', 'Add selected spare parts') }}
               </button>
             </div>
           </div>
@@ -666,9 +669,9 @@ onMounted(loadWorkOrder)
           <div class="section-headline modal-headline">
             <div>
               <p class="kicker">Work Orders</p>
-              <h3 class="section-title">确认维修工单</h3>
+              <h3 class="section-title">{{ pickLocaleText('确认维修工单', 'Confirm work order') }}</h3>
             </div>
-            <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeConfirmModal">
+            <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('关闭弹出框', 'Close dialog')" @click="closeConfirmModal">
               <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path
                   d="M4 4l8 8M12 4l-8 8"
@@ -683,14 +686,14 @@ onMounted(loadWorkOrder)
 
           <form class="form-grid" @submit.prevent="submitConfirmation">
             <label>
-              <span>确认时间</span>
+              <span>{{ pickLocaleText('确认时间', 'Confirmed at') }}</span>
               <input v-model="confirmForm.confirmedAt" type="datetime-local" required />
             </label>
 
             <div class="modal-actions">
-              <button class="button button-ghost" type="button" @click="closeConfirmModal">取消</button>
+              <button class="button button-ghost" type="button" @click="closeConfirmModal">{{ pickLocaleText('取消', 'Cancel') }}</button>
               <button class="button button-success" type="submit" :disabled="isConfirming">
-                {{ isConfirming ? '确认中...' : '确认维修工单' }}
+                {{ isConfirming ? pickLocaleText('确认中...', 'Confirming...') : pickLocaleText('确认维修工单', 'Confirm work order') }}
               </button>
             </div>
           </form>

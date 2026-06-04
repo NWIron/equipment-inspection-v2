@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { pickLocaleText, translateStaticText } from '../i18n'
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
 import { useMessageToastStore } from '../stores/messageToast'
 import { goBackOrHome } from '../utils/navigation'
@@ -36,7 +37,9 @@ const priorityOptions = computed(() => inspectionTaskStore.priorityOptions)
 const statusOptions = computed(() => inspectionTaskStore.statusOptions)
 const selectedEquipment = computed(() => inspectionTaskStore.getEquipmentById(taskForm.equipmentId))
 const inspectionItemPreview = computed(() => selectedEquipment.value?.inspectionItems ?? [])
-const taskModalTitle = computed(() => (editingTaskId.value ? '编辑点检任务' : '创建点检任务'))
+const taskModalTitle = computed(() =>
+  editingTaskId.value ? pickLocaleText('编辑点检任务', 'Edit inspection task') : pickLocaleText('创建点检任务', 'Create inspection task'),
+)
 
 function getTaskStatusClass(status) {
   return {
@@ -128,7 +131,7 @@ async function consumeScannedEquipmentQuery() {
   }
 
   if (!scannedEquipmentCode) {
-    setFeedback('二维码中未包含设备编码，请重新扫描。', 'error')
+    setFeedback(pickLocaleText('二维码中未包含设备编码，请重新扫描。', 'The QR code does not contain an equipment code. Please scan again.'), 'error')
     await router.replace({ name: 'inspection-task-management' })
     return
   }
@@ -138,7 +141,7 @@ async function consumeScannedEquipmentQuery() {
   )
 
   if (!scannedEquipment) {
-    setFeedback('未找到二维码对应的设备编码，请确认二维码内容是否正确。', 'error')
+    setFeedback(pickLocaleText('未找到二维码对应的设备编码，请确认二维码内容是否正确。', 'No equipment matched the scanned code. Please verify the QR content.'), 'error')
     await router.replace({ name: 'inspection-task-management' })
     return
   }
@@ -150,7 +153,10 @@ async function consumeScannedEquipmentQuery() {
   )
 
   if (activeTask) {
-    setFeedback(`设备 ${scannedEquipment.equipmentCode} 已存在未完成点检任务，已为你打开对应任务。`, 'info')
+    setFeedback(pickLocaleText(
+      `设备 ${scannedEquipment.equipmentCode} 已存在未完成点检任务，已为你打开对应任务。`,
+      `Equipment ${scannedEquipment.equipmentCode} already has an unfinished inspection task. The related task has been opened for you.`,
+    ), 'info')
     await router.replace({
       name: 'inspection-task-execution',
       params: { taskId: activeTask.id },
@@ -159,7 +165,13 @@ async function consumeScannedEquipmentQuery() {
   }
 
   openTaskModal({ equipmentId: scannedEquipment.id })
-  setFeedback(`已识别设备 ${scannedEquipment.equipmentCode}，请继续完善点检任务信息。`, 'info')
+  setFeedback(
+    pickLocaleText(
+      `已识别设备 ${scannedEquipment.equipmentCode}，请继续完善点检任务信息。`,
+      `Equipment ${scannedEquipment.equipmentCode} was recognized. Please complete the inspection task details.`,
+    ),
+    'info',
+  )
   await router.replace({ name: 'inspection-task-management' })
 }
 
@@ -192,7 +204,7 @@ onMounted(async () => {
           </svg>
         </button>
         <div class="page-header-copy">
-          <h2 class="page-title">点检任务</h2>
+          <h2 class="page-title">{{ pickLocaleText('点检任务', 'Inspection Tasks') }}</h2>
         </div>
       </div>
     </div>
@@ -201,57 +213,57 @@ onMounted(async () => {
       <div class="section-headline">
         <div>
           <p class="kicker">Inspection Tasks</p>
-          <h3 class="section-title">任务清单</h3>
+          <h3 class="section-title">{{ pickLocaleText('任务清单', 'Task list') }}</h3>
         </div>
-        <button class="button button-success" type="button" @click="openTaskModal">创建点检任务</button>
+        <button class="button button-success" type="button" @click="openTaskModal">{{ pickLocaleText('创建点检任务', 'Create inspection task') }}</button>
       </div>
 
-      <div v-if="inspectionTaskStore.isInitializing" class="notice">正在加载点检任务主数据...</div>
+      <div v-if="inspectionTaskStore.isInitializing" class="notice">{{ pickLocaleText('正在加载点检任务主数据...', 'Loading inspection task master data...') }}</div>
 
-      <div v-if="!taskDirectory.length" class="empty-state">当前还没有点检任务。</div>
+      <div v-if="!taskDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有点检任务。', 'There are no inspection tasks yet.') }}</div>
 
       <div v-else class="entity-list">
         <article v-for="task in taskDirectory" :key="task.id" class="entity-card">
           <div class="entity-card__header">
             <div>
               <h4>{{ task.taskName }}</h4>
-              <p>{{ task.taskNumber || '待生成任务单号' }} · {{ task.equipment?.equipmentCode || '未关联设备' }} · {{ task.inspector?.name || '未分配点检员' }}</p>
+              <p>{{ task.taskNumber || pickLocaleText('待生成任务单号', 'Task number pending') }} · {{ task.equipment?.equipmentCode || pickLocaleText('未关联设备', 'No linked equipment') }} · {{ task.inspector?.name || pickLocaleText('未分配点检员', 'Inspector not assigned') }}</p>
             </div>
             <div class="action-row">
               <RouterLink class="button button-primary" :to="{ name: 'inspection-task-execution', params: { taskId: task.id } }">
-                进入点检
+                {{ pickLocaleText('进入点检', 'Open task') }}
               </RouterLink>
-              <button class="button button-ghost" type="button" @click="editTask(task)">编辑</button>
-              <button class="button button-danger" type="button" @click="removeTask(task.id)">删除</button>
+              <button class="button button-ghost" type="button" @click="editTask(task)">{{ pickLocaleText('编辑', 'Edit') }}</button>
+              <button class="button button-danger" type="button" @click="removeTask(task.id)">{{ pickLocaleText('删除', 'Delete') }}</button>
             </div>
           </div>
 
           <div class="entity-meta-grid">
             <div class="entity-meta-block">
-              <span class="entity-meta-label">任务单号</span>
-              <strong>{{ task.taskNumber || '待生成' }}</strong>
+              <span class="entity-meta-label">{{ pickLocaleText('任务单号', 'Task number') }}</span>
+              <strong>{{ task.taskNumber || pickLocaleText('待生成', 'Pending generation') }}</strong>
             </div>
             <div class="entity-meta-block">
-              <span class="entity-meta-label">任务创建时间</span>
+              <span class="entity-meta-label">{{ pickLocaleText('任务创建时间', 'Created at') }}</span>
               <strong>{{ formatDateTimeDisplay(task.createdAt) }}</strong>
             </div>
             <div class="entity-meta-block">
-              <span class="entity-meta-label">设备责任人</span>
-              <strong>{{ task.equipment?.ownerName || '未分配' }}</strong>
+              <span class="entity-meta-label">{{ pickLocaleText('设备责任人', 'Equipment owner') }}</span>
+              <strong>{{ task.equipment?.ownerName || pickLocaleText('未分配', 'Unassigned') }}</strong>
             </div>
             <div class="entity-meta-block">
-              <span class="entity-meta-label">优先级</span>
-              <strong>{{ task.priority }}</strong>
+              <span class="entity-meta-label">{{ pickLocaleText('优先级', 'Priority') }}</span>
+              <strong>{{ translateStaticText(task.priority) }}</strong>
             </div>
             <div class="entity-meta-block">
-              <span class="entity-meta-label">执行状态</span>
+              <span class="entity-meta-label">{{ pickLocaleText('执行状态', 'Execution status') }}</span>
               <strong class="task-status" :class="getTaskStatusClass(task.status)">
                 <span class="task-status__dot"></span>
-                {{ task.status }}
+                {{ translateStaticText(task.status) }}
               </strong>
             </div>
             <div class="entity-meta-block">
-              <span class="entity-meta-label">点检项数量</span>
+              <span class="entity-meta-label">{{ pickLocaleText('点检项数量', 'Inspection item count') }}</span>
               <strong>{{ task.inspectionItemCount }}</strong>
             </div>
           </div>
@@ -272,7 +284,7 @@ onMounted(async () => {
             <p class="kicker">Inspection Tasks</p>
             <h3 class="section-title">{{ taskModalTitle }}</h3>
           </div>
-          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeTaskModal">
+          <button class="button button-ghost button-icon" type="button" :aria-label="pickLocaleText('关闭弹出框', 'Close dialog')" @click="closeTaskModal">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path
                 d="M4 4l8 8M12 4l-8 8"
@@ -288,19 +300,19 @@ onMounted(async () => {
         <form class="form-grid" @submit.prevent="submitTask">
           <div class="form-two-column">
             <label>
-              <span>点检任务名称</span>
-              <input v-model="taskForm.taskName" type="text" placeholder="例如 电子天平日常点检" />
+              <span>{{ pickLocaleText('点检任务名称', 'Inspection task name') }}</span>
+              <input v-model="taskForm.taskName" type="text" :placeholder="pickLocaleText('例如 电子天平日常点检', 'Example: Daily balance inspection')" />
             </label>
 
             <label>
-              <span>任务创建时间</span>
+              <span>{{ pickLocaleText('任务创建时间', 'Created at') }}</span>
               <input v-model="taskForm.createdAt" type="datetime-local" />
             </label>
 
             <label>
-              <span>设备信息</span>
+              <span>{{ pickLocaleText('设备信息', 'Equipment') }}</span>
               <select v-model="taskForm.equipmentId">
-                <option value="">请选择设备</option>
+                <option value="">{{ pickLocaleText('请选择设备', 'Select equipment') }}</option>
                 <option v-for="equipment in equipmentOptions" :key="equipment.id" :value="equipment.id">
                   {{ equipment.equipmentCode }} · {{ equipment.description }}
                 </option>
@@ -308,9 +320,9 @@ onMounted(async () => {
             </label>
 
             <label>
-              <span>点检员</span>
+              <span>{{ pickLocaleText('点检员', 'Inspector') }}</span>
               <select v-model="taskForm.inspectorUserId">
-                <option value="">请选择点检员</option>
+                <option value="">{{ pickLocaleText('请选择点检员', 'Select an inspector') }}</option>
                 <option v-for="inspector in inspectorOptions" :key="inspector.id" :value="inspector.id">
                   {{ inspector.name }} / {{ inspector.accountName }}
                 </option>
@@ -318,34 +330,34 @@ onMounted(async () => {
             </label>
 
             <label>
-              <span>优先级</span>
+              <span>{{ pickLocaleText('优先级', 'Priority') }}</span>
               <select v-model="taskForm.priority">
-                <option v-for="priority in priorityOptions" :key="priority" :value="priority">{{ priority }}</option>
+                <option v-for="priority in priorityOptions" :key="priority" :value="priority">{{ translateStaticText(priority) }}</option>
               </select>
             </label>
 
             <label>
-              <span>状态</span>
+              <span>{{ pickLocaleText('状态', 'Status') }}</span>
               <select v-model="taskForm.status">
-                <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+                <option v-for="status in statusOptions" :key="status" :value="status">{{ translateStaticText(status) }}</option>
               </select>
             </label>
           </div>
 
           <fieldset class="selection-fieldset">
-            <legend>关联点检项预览</legend>
+            <legend>{{ pickLocaleText('关联点检项预览', 'Linked inspection items preview') }}</legend>
             <div class="tag-row">
               <span v-for="item in inspectionItemPreview" :key="item.id" class="tag">
                 {{ item.code }} · {{ item.description }}
               </span>
-              <span v-if="!inspectionItemPreview.length" class="tag tag-muted">选择设备后展示关联点检项</span>
+              <span v-if="!inspectionItemPreview.length" class="tag tag-muted">{{ pickLocaleText('选择设备后展示关联点检项', 'Linked inspection items appear after equipment selection') }}</span>
             </div>
           </fieldset>
 
           <div class="modal-actions">
-            <button class="button button-ghost" type="button" @click="closeTaskModal">取消</button>
+            <button class="button button-ghost" type="button" @click="closeTaskModal">{{ pickLocaleText('取消', 'Cancel') }}</button>
             <button class="button button-success" type="submit" :disabled="isSubmitting">
-              {{ editingTaskId ? '保存点检任务' : '创建点检任务' }}
+              {{ editingTaskId ? pickLocaleText('保存点检任务', 'Save inspection task') : pickLocaleText('创建点检任务', 'Create inspection task') }}
             </button>
           </div>
         </form>

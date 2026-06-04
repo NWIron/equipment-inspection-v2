@@ -1,5 +1,8 @@
 <script setup>
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+import { resolveFeatureText } from '../i18n'
 
 defineProps({
   feature: {
@@ -7,17 +10,19 @@ defineProps({
     required: true,
   },
 })
+
+const { t } = useI18n()
 </script>
 
 <template>
   <RouterLink :to="feature.path" class="feature-card surface-card" :data-accent="feature.accent">
     <div class="feature-card__body">
-      <p class="feature-card__category">{{ feature.category }}</p>
-      <h3>{{ feature.title }}</h3>
-      <p>{{ feature.summary }}</p>
+      <p class="feature-card__category">{{ resolveFeatureText(feature, 'category') }}</p>
+      <h3>{{ resolveFeatureText(feature, 'title') }}</h3>
+      <p>{{ resolveFeatureText(feature, 'summary') }}</p>
     </div>
 
-    <span class="feature-card__cta">进入模块</span>
+    <span class="feature-card__cta">{{ t('featureCard.enter') }}</span>
   </RouterLink>
 </template>
 
