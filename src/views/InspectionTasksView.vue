@@ -121,23 +121,40 @@ async function removeTask(taskId) {
 
 async function consumeScannedEquipmentQuery() {
   const shouldCreateTask = String(route.query.createTask ?? '') === '1'
-  const scannedEquipmentId = typeof route.query.equipmentId === 'string' ? route.query.equipmentId : ''
+  const scannedEquipmentCode = typeof route.query.equipmentCode === 'string' ? route.query.equipmentCode.trim().toUpperCase() : ''
 
   if (!shouldCreateTask) {
     return
   }
 
-  if (!scannedEquipmentId) {
-    setFeedback('二维码中未包含设备ID，请重新扫描。', 'error')
+  if (!scannedEquipmentCode) {
+    setFeedback('二维码中未包含设备编码，请重新扫描。', 'error')
     await router.replace({ name: 'inspection-task-management' })
     return
   }
 
-  const scannedEquipment = equipmentOptions.value.find((equipment) => equipment.id === scannedEquipmentId)
+  const scannedEquipment = equipmentOptions.value.find(
+    (equipment) => String(equipment.equipmentCode ?? '').trim().toUpperCase() === scannedEquipmentCode,
+  )
 
   if (!scannedEquipment) {
-    setFeedback('未找到二维码对应的设备，请确认二维码内容是否正确。', 'error')
+    setFeedback('未找到二维码对应的设备编码，请确认二维码内容是否正确。', 'error')
     await router.replace({ name: 'inspection-task-management' })
+    return
+  }
+
+  const activeTask = taskDirectory.value.find(
+    (task) =>
+      String(task.equipment?.equipmentCode ?? '').trim().toUpperCase() === scannedEquipmentCode &&
+      task.status !== '已完成',
+  )
+
+  if (activeTask) {
+    setFeedback(`设备 ${scannedEquipment.equipmentCode} 已存在未完成点检任务，已为你打开对应任务。`, 'info')
+    await router.replace({
+      name: 'inspection-task-execution',
+      params: { taskId: activeTask.id },
+    })
     return
   }
 

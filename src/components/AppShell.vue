@@ -22,45 +22,8 @@ const currentRoleLabel = computed(() => accessStore.activeRoles.map((role) => ro
 const canScanInspectionTasks = computed(() => accessStore.canAccessFeature('inspection-tasks'))
 const showMobileScanButton = computed(() => route.name === 'home' && canScanInspectionTasks.value)
 
-function parseEquipmentIdFromQr(rawValue) {
-  const value = String(rawValue ?? '').trim()
-
-  if (!value) {
-    return ''
-  }
-
-  try {
-    const parsed = JSON.parse(value)
-    const objectValue = parsed && typeof parsed === 'object' ? parsed : null
-    const embeddedId = objectValue?.equipmentId ?? objectValue?.deviceId ?? objectValue?.id
-
-    if (typeof embeddedId === 'string' && embeddedId.trim()) {
-      return embeddedId.trim()
-    }
-  } catch {
-  }
-
-  try {
-    const url = new URL(value)
-    const embeddedId =
-      url.searchParams.get('equipmentId') ??
-      url.searchParams.get('deviceId') ??
-      url.searchParams.get('id') ??
-      ''
-
-    if (embeddedId.trim()) {
-      return embeddedId.trim()
-    }
-  } catch {
-  }
-
-  const keyValueMatch = value.match(/(?:equipmentId|equipment_id|deviceId|device_id|id)\s*[:=]\s*([^\s,;]+)/i)
-
-  if (keyValueMatch?.[1]) {
-    return keyValueMatch[1].trim()
-  }
-
-  return value
+function parseEquipmentCodeFromQr(rawValue) {
+  return String(rawValue ?? '').trim().toUpperCase()
 }
 
 function destroyScanner() {
@@ -87,11 +50,11 @@ async function handleScanResult(result) {
   isHandlingScan.value = true
 
   const rawValue = typeof result === 'string' ? result : result?.data ?? ''
-  const equipmentId = parseEquipmentIdFromQr(rawValue)
+  const equipmentCode = parseEquipmentCodeFromQr(rawValue)
 
-  if (!equipmentId) {
+  if (!equipmentCode) {
     isHandlingScan.value = false
-    toastStore.show('二维码中未识别到设备ID，请重新扫描。', 'error')
+    toastStore.show('二维码中未识别到设备编码，请重新扫描。', 'error')
     return
   }
 
@@ -101,7 +64,7 @@ async function handleScanResult(result) {
     name: 'inspection-task-management',
     query: {
       createTask: '1',
-      equipmentId,
+      equipmentCode,
     },
   })
 }
@@ -318,7 +281,7 @@ onBeforeUnmount(() => {
           <video ref="scanVideoElement" class="scan-modal__video" autoplay playsinline muted></video>
           <div class="scan-modal__frame" aria-hidden="true"></div>
         </div>
-        <p class="scan-modal__hint">请将包含设备ID的二维码置于取景框内，识别后将自动打开新建点检任务。</p>
+        <p class="scan-modal__hint">请将设备编码二维码置于取景框内，识别后将自动进入对应点检任务或打开新建点检任务。</p>
       </section>
     </div>
   </div>
