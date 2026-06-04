@@ -1,8 +1,8 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { pickLocaleText, translateStaticText } from '../i18n'
+import { i18n, pickLocaleText, translateStaticText } from '../i18n'
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
 import { useMessageToastStore } from '../stores/messageToast'
 import { goBackOrHome } from '../utils/navigation'
@@ -16,8 +16,19 @@ const toastStore = useMessageToastStore()
 const isSaving = ref(false)
 const isCompleting = ref(false)
 const isProcessingPhotos = ref(false)
+const isVoiceRecording = ref(false)
+const isVoiceButtonPressed = ref(false)
+const isMobileLayout = ref(false)
+const isVoiceTranscriptDetected = ref(false)
 
 const MAX_PHOTO_COUNT = 6
+
+let speechRecognition = null
+let mobileMediaQuery = null
+let speechNoteBase = ''
+
+const SpeechRecognitionConstructor =
+  typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition || null : null
 
 const executionForm = reactive({
   faultCodeId: '',
@@ -36,6 +47,155 @@ function getTaskStatusClass(status) {
 
 function setFeedback(message, type = 'success') {
   toastStore.show(message, type)
+}
+
+function syncMobileLayout() {
+  if (!mobileMediaQuery) {
+    return
+  }
+
+  isMobileLayout.value = mobileMediaQuery.matches
+}
+
+function buildVoiceNote(baseText, transcript) {
+  const normalizedBase = String(baseText ?? '').trim()
+  const normalizedTranscript = String(transcript ?? '').trim()
+
+  if (!normalizedTranscript) {
+    return normalizedBase
+  }
+
+  if (!normalizedBase) {
+    return normalizedTranscript
+  }
+
+  return `${normalizedBase}\n${normalizedTranscript}`
+}
+
+function getVoiceErrorMessage(errorCode) {
+  switch (errorCode) {
+    case 'audio-capture':
+      return pickLocaleText('未检测到可用麦克风，请检查设备权限。', 'No microphone was detected. Please check device permissions.')
+    case 'not-allowed':
+    case 'service-not-allowed':
+      return pickLocaleText('语音输入权限被拒绝，请允许浏览器访问麦克风。', 'Voice input permission was denied. Please allow microphone access in the browser.')
+    case 'network':
+      return pickLocaleText('语音识别网络异常，请稍后重试。', 'The voice recognition network is unavailable. Please try again later.')
+    case 'no-speech':
+      return pickLocaleText('未识别到语音内容，请按住按钮后继续说话。', 'No speech was detected. Hold the button and speak again.')
+    default:
+      return pickLocaleText('语音输入暂时不可用，请稍后重试。', 'Voice input is currently unavailable. Please try again later.')
+  }
+}
+
+function stopVoiceRecognition() {
+  if (!speechRecognition) {
+    return
+  }
+
+  speechRecognition.stop()
+}
+
+function resetVoiceInputState() {
+  isVoiceRecording.value = false
+  isVoiceButtonPressed.value = false
+  isVoiceTranscriptDetected.value = false
+  speechNoteBase = ''
+}
+
+function ensureVoiceRecognition() {
+  if (!SpeechRecognitionConstructor) {
+    return null
+  }
+
+  if (speechRecognition) {
+    speechRecognition.lang = i18n.global.locale.value === 'en-US' ? 'en-US' : 'zh-CN'
+    return speechRecognition
+  }
+
+  speechRecognition = new SpeechRecognitionConstructor()
+  speechRecognition.continuous = true
+  speechRecognition.interimResults = true
+  speechRecognition.lang = i18n.global.locale.value === 'en-US' ? 'en-US' : 'zh-CN'
+
+  speechRecognition.onresult = (event) => {
+    let transcript = ''
+
+    for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      transcript += event.results[index][0]?.transcript ?? ''
+    }
+
+    const normalizedTranscript = transcript.trim()
+
+    if (normalizedTranscript) {
+      isVoiceTranscriptDetected.value = true
+    }
+
+    executionForm.faultNote = buildVoiceNote(speechNoteBase, normalizedTranscript)
+  }
+
+  speechRecognition.onerror = (event) => {
+    setFeedback(getVoiceErrorMessage(event.error), 'error')
+  }
+
+  speechRecognition.onend = () => {
+    if (isVoiceRecording.value && !isVoiceTranscriptDetected.value) {
+      setFeedback(pickLocaleText('录音已结束，未识别到新的故障说明。', 'Voice recording ended and no new fault notes were recognized.'), 'info')
+    }
+
+    resetVoiceInputState()
+  }
+
+  return speechRecognition
+}
+
+function startVoiceRecognition() {
+  if (inspectionTaskStore.activeTask?.status === '已完成') {
+    return
+  }
+
+  const recognition = ensureVoiceRecognition()
+
+  if (!recognition) {
+    setFeedback(pickLocaleText('当前浏览器暂不支持语音输入，请使用最新版 Chrome 或 Edge。', 'This browser does not support voice input yet. Please use a recent version of Chrome or Edge.'), 'error')
+    return
+  }
+
+  if (isVoiceRecording.value) {
+    return
+  }
+
+  speechNoteBase = String(executionForm.faultNote ?? '').trim()
+  isVoiceTranscriptDetected.value = false
+  isVoiceRecording.value = true
+  isVoiceButtonPressed.value = true
+
+  try {
+    recognition.start()
+  } catch {
+    resetVoiceInputState()
+    setFeedback(pickLocaleText('无法启动语音输入，请稍后重试。', 'Unable to start voice input. Please try again later.'), 'error')
+  }
+}
+
+function handleVoicePressStart(event) {
+  if (event.pointerType === 'mouse' && event.button !== 0) {
+    return
+  }
+
+  event.preventDefault()
+  startVoiceRecognition()
+}
+
+function handleVoicePressEnd(event) {
+  event.preventDefault()
+  isVoiceButtonPressed.value = false
+
+  if (!isVoiceRecording.value) {
+    return
+  }
+
+  stopVoiceRecognition()
 }
 
 function goBack() {
@@ -141,7 +301,20 @@ async function completeTask() {
   }
 }
 
-onMounted(loadTask)
+onMounted(() => {
+  mobileMediaQuery = window.matchMedia('(max-width: 900px)')
+  syncMobileLayout()
+  mobileMediaQuery.addEventListener('change', syncMobileLayout)
+  loadTask()
+})
+
+onBeforeUnmount(() => {
+  mobileMediaQuery?.removeEventListener('change', syncMobileLayout)
+  mobileMediaQuery = null
+  speechRecognition?.abort()
+  speechRecognition = null
+  resetVoiceInputState()
+})
 </script>
 
 <template>
@@ -337,14 +510,94 @@ onMounted(loadTask)
         </div>
 
         <label class="fault-note-field">
-          <span>{{ pickLocaleText('故障说明', 'Fault notes') }}</span>
+          <div class="fault-note-field__header">
+            <span>{{ pickLocaleText('故障说明', 'Fault notes') }}</span>
+            <button
+              v-if="!isMobileLayout"
+              class="button button-ghost button-icon voice-input-trigger"
+              :class="{ 'is-recording': isVoiceRecording || isVoiceButtonPressed }"
+              type="button"
+              :aria-label="pickLocaleText('长按开始语音输入，松开停止', 'Press and hold to start voice input, release to stop')"
+              :disabled="inspectionTaskStore.activeTask.status === '已完成'"
+              @pointerdown="handleVoicePressStart"
+              @pointerup="handleVoicePressEnd"
+              @pointerleave="handleVoicePressEnd"
+              @pointercancel="handleVoicePressEnd"
+            >
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path
+                  d="M8 2.75a1.75 1.75 0 011.75 1.75v3.25a1.75 1.75 0 11-3.5 0V4.5A1.75 1.75 0 018 2.75z"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.4"
+                />
+                <path
+                  d="M4.75 7.75a3.25 3.25 0 006.5 0"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.4"
+                />
+                <path
+                  d="M8 11v2.25M5.75 13.25h4.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.4"
+                />
+              </svg>
+            </button>
+          </div>
           <textarea
             v-model="executionForm.faultNote"
             rows="3"
             :placeholder="pickLocaleText('如点检过程中发现问题，可在完成点检项后补充故障说明', 'If issues are found during inspection, add fault notes after completing the checklist items.')"
             :disabled="inspectionTaskStore.activeTask.status === '已完成'"
           ></textarea>
+          <span v-if="!isMobileLayout" class="fault-note-field__hint">
+            {{ isVoiceRecording ? pickLocaleText('正在录音，松开按钮后自动停止。', 'Recording in progress. Release the button to stop.') : pickLocaleText('长按麦克风按钮开始语音输入，松开后停止。', 'Press and hold the microphone button to start voice input, then release to stop.') }}
+          </span>
         </label>
+
+        <button
+          v-if="isMobileLayout"
+          class="button voice-input-trigger voice-input-trigger--mobile"
+          :class="{ 'is-recording': isVoiceRecording || isVoiceButtonPressed }"
+          type="button"
+          :disabled="inspectionTaskStore.activeTask.status === '已完成'"
+          @pointerdown="handleVoicePressStart"
+          @pointerup="handleVoicePressEnd"
+          @pointerleave="handleVoicePressEnd"
+          @pointercancel="handleVoicePressEnd"
+        >
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M8 2.75a1.75 1.75 0 011.75 1.75v3.25a1.75 1.75 0 11-3.5 0V4.5A1.75 1.75 0 018 2.75z"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.4"
+            />
+            <path
+              d="M4.75 7.75a3.25 3.25 0 006.5 0"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.4"
+            />
+            <path
+              d="M8 11v2.25M5.75 13.25h4.5"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.4"
+            />
+          </svg>
+          <span>
+            {{ isVoiceRecording ? pickLocaleText('松开结束语音输入', 'Release to stop voice input') : pickLocaleText('长按开始语音输入', 'Press and hold to start voice input') }}
+          </span>
+        </button>
       </section>
     </template>
   </div>
@@ -454,9 +707,46 @@ onMounted(loadTask)
   gap: 8px;
 }
 
+.fault-note-field__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fault-note-field__hint {
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+}
+
 .fault-info-field {
   display: grid;
   gap: 6px;
+}
+
+.voice-input-trigger {
+  flex-shrink: 0;
+  border-color: rgba(9, 105, 218, 0.18);
+  color: var(--color-brand);
+}
+
+.voice-input-trigger svg {
+  width: 16px;
+  height: 16px;
+}
+
+.voice-input-trigger.is-recording {
+  background: rgba(9, 105, 218, 0.1);
+  border-color: rgba(9, 105, 218, 0.3);
+  color: var(--color-brand-strong);
+}
+
+.voice-input-trigger--mobile {
+  width: 100%;
+  min-height: 46px;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 18px;
 }
 
 .photo-field {
@@ -591,13 +881,18 @@ select:focus {
   .section-headline,
   .result-card__header,
   .photo-field__header,
-  .photo-card__footer {
+  .photo-card__footer,
+  .fault-note-field__header {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .result-select-field {
     width: 100%;
+  }
+
+  .voice-input-trigger--mobile {
+    align-self: stretch;
   }
 }
 </style>
