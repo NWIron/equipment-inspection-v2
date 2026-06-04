@@ -240,7 +240,49 @@ async function loadInspectionTaskPhotos(env, taskIds) {
   )
 }
 
-function buildTaskPayloads(taskRows, equipmentOptions, inspectorOptions, faultCodes, resultLookup, currentUserId, photoLookup = {}) {
+async function loadLinkedWorkOrders(env, taskIds) {
+  if (!taskIds.length) {
+    return {}
+  }
+
+  const rows = (
+    await env.DB.prepare(
+      `SELECT id,
+              source_inspection_task_id,
+              order_number,
+              confirmed_at,
+              created_at
+       FROM work_orders
+       WHERE source_inspection_task_id IN (${buildPlaceholders(taskIds)})
+       ORDER BY created_at DESC, order_number DESC`,
+    )
+      .bind(...taskIds)
+      .all()
+  ).results ?? []
+
+  return rows.reduce((lookup, row) => {
+    if (!lookup[row.source_inspection_task_id]) {
+      lookup[row.source_inspection_task_id] = {
+        id: row.id,
+        orderNumber: row.order_number,
+        confirmedAt: row.confirmed_at,
+      }
+    }
+
+    return lookup
+  }, {})
+}
+
+function buildTaskPayloads(
+  taskRows,
+  equipmentOptions,
+  inspectorOptions,
+  faultCodes,
+  resultLookup,
+  currentUserId,
+  photoLookup = {},
+  linkedWorkOrderLookup = {},
+) {
   const equipmentMap = Object.fromEntries(equipmentOptions.map((equipment) => [equipment.id, equipment]))
   const inspectorMap = Object.fromEntries(inspectorOptions.map((inspector) => [inspector.id, inspector]))
   const faultCodeMap = Object.fromEntries(faultCodes.map((faultCode) => [faultCode.id, faultCode]))
@@ -269,6 +311,7 @@ function buildTaskPayloads(taskRows, equipmentOptions, inspectorOptions, faultCo
       equipment,
       inspector: inspectorMap[row.inspector_user_id] ?? null,
       faultCode: row.fault_code_id ? faultCodeMap[row.fault_code_id] ?? null : null,
+      linkedWorkOrder: linkedWorkOrderLookup[row.id] ?? null,
       inspectionPhotos,
       photoCount: inspectionPhotos.length,
       inspectionResults,
@@ -290,6 +333,10 @@ export async function buildInspectionTaskBootstrapPayload(env, currentUserId = n
     env,
     taskRows.map((task) => task.id),
   )
+  const linkedWorkOrderLookup = await loadLinkedWorkOrders(
+    env,
+    taskRows.map((task) => task.id),
+  )
 
   return {
     equipmentOptions,
@@ -298,7 +345,16 @@ export async function buildInspectionTaskBootstrapPayload(env, currentUserId = n
     priorityOptions: TASK_PRIORITY_OPTIONS,
     statusOptions: EDITABLE_TASK_STATUS_OPTIONS,
     resultStatusOptions: TASK_RESULT_STATUS_OPTIONS,
-    tasks: buildTaskPayloads(taskRows, equipmentOptions, inspectorOptions, faultCodes, resultLookup, currentUserId),
+    tasks: buildTaskPayloads(
+      taskRows,
+      equipmentOptions,
+      inspectorOptions,
+      faultCodes,
+      resultLookup,
+      currentUserId,
+      {},
+      linkedWorkOrderLookup,
+    ),
   }
 }
 
@@ -314,9 +370,10 @@ export async function buildInspectionTaskDetailPayload(env, taskId, currentUserI
     return null
   }
 
-  const [resultLookup, photoLookup] = await Promise.all([
+  const [resultLookup, photoLookup, linkedWorkOrderLookup] = await Promise.all([
     loadInspectionTaskResults(env, [taskId]),
     loadInspectionTaskPhotos(env, [taskId]),
+    loadLinkedWorkOrders(env, [taskId]),
   ])
 
   return {
@@ -334,6 +391,7 @@ export async function buildInspectionTaskDetailPayload(env, taskId, currentUserI
       resultLookup,
       currentUserId,
       photoLookup,
+      linkedWorkOrderLookup,
     )[0],
   }
 }

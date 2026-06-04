@@ -673,6 +673,7 @@ export async function validateWorkOrderReferences(
   faultCodeId,
   createdByUserId,
   sourceInspectionTaskId = null,
+  currentWorkOrderId = null,
 ) {
   const [equipment] = await loadWorkOrderEquipmentOptions(env, [equipmentId])
 
@@ -702,6 +703,23 @@ export async function validateWorkOrderReferences(
 
     if (!sourceInspectionTask) {
       return { ok: false, message: '来源点检任务不存在。' }
+    }
+
+    const existingWorkOrder = await env.DB.prepare(
+      `SELECT id, order_number
+       FROM work_orders
+       WHERE source_inspection_task_id = ?1
+         AND (?2 IS NULL OR id != ?2)
+       LIMIT 1`,
+    )
+      .bind(sourceInspectionTaskId, currentWorkOrderId)
+      .first()
+
+    if (existingWorkOrder) {
+      return {
+        ok: false,
+        message: `该点检任务已关联维修工单 ${existingWorkOrder.order_number}，请直接进入对应工单。`,
+      }
     }
   }
 

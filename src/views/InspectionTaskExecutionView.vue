@@ -175,12 +175,23 @@ onMounted(loadTask)
             <h3 class="section-title">{{ inspectionTaskStore.activeTask.taskName }}</h3>
           </div>
           <div class="action-row">
-            <RouterLink
-              class="button"
-              :to="{ name: 'work-order-management', query: { sourceTaskId: inspectionTaskStore.activeTask.id } }"
-            >
-              创建维修工单
-            </RouterLink>
+              <RouterLink
+                v-if="inspectionTaskStore.activeTask.linkedWorkOrder"
+                class="button"
+                :to="{
+                  name: 'work-order-processing',
+                  params: { workOrderId: inspectionTaskStore.activeTask.linkedWorkOrder.id },
+                }"
+              >
+                查看对应工单
+              </RouterLink>
+              <RouterLink
+                v-else
+                class="button"
+                :to="{ name: 'work-order-management', query: { sourceTaskId: inspectionTaskStore.activeTask.id } }"
+              >
+                创建维修工单
+              </RouterLink>
             <button
               class="button button-success"
               type="button"
@@ -225,6 +236,12 @@ onMounted(loadTask)
             <strong class="task-status" :class="getTaskStatusClass(inspectionTaskStore.activeTask.status)">
               <span class="task-status__dot"></span>
               {{ inspectionTaskStore.activeTask.status }}
+            </strong>
+          </div>
+          <div class="entity-meta-block">
+            <span class="entity-meta-label">关联工单</span>
+            <strong>
+              {{ inspectionTaskStore.activeTask.linkedWorkOrder?.orderNumber || '未创建' }}
             </strong>
           </div>
         </div>

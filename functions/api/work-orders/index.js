@@ -27,6 +27,7 @@ export async function onRequestPost({ env, request }) {
     body.faultCodeId,
     body.createdByUserId,
     body.sourceInspectionTaskId,
+    null,
   )
 
   if (!references.ok) {

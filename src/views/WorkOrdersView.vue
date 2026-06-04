@@ -162,6 +162,19 @@ onMounted(async () => {
     return
   }
 
+  const existingSourceWorkOrder = sourceTaskId
+    ? workOrders.value.find((workOrder) => workOrder.sourceInspectionTaskId === sourceTaskId) ?? null
+    : null
+
+  if (existingSourceWorkOrder) {
+    setFeedback(`该点检任务已关联工单 ${existingSourceWorkOrder.orderNumber}，已为你打开对应工单。`, 'info')
+    router.replace({
+      name: 'work-order-processing',
+      params: { workOrderId: existingSourceWorkOrder.id },
+    })
+    return
+  }
+
   applyDraftToForm()
 
   if (sourceTaskId && workOrderStore.draftWorkOrder?.sourceInspectionTaskId) {

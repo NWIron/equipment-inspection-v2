@@ -63,6 +63,7 @@ export async function onRequestPut({ env, request, params }) {
     body.faultCodeId,
     body.createdByUserId,
     body.sourceInspectionTaskId,
+    workOrderId,
   )
 
   if (!references.ok) {
