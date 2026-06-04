@@ -1,4 +1,5 @@
 <script setup>
+import QRCode from 'qrcode'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -17,12 +18,16 @@ const isTaskListModalOpen = ref(false)
 const isInspectionItemModalOpen = ref(false)
 const isFaultCodeModalOpen = ref(false)
 const isSparePartModalOpen = ref(false)
+const isEquipmentQrModalOpen = ref(false)
 const editingEquipmentId = ref('')
 const editingTaskListId = ref('')
 const editingInspectionItemId = ref('')
 const editingFaultCodeId = ref('')
 const editingSparePartId = ref('')
 const isSubmitting = ref(false)
+const isGeneratingEquipmentQr = ref(false)
+const equipmentQrCodeDataUrl = ref('')
+const activeEquipmentQr = ref(null)
 
 const equipmentForm = reactive({
   equipmentCode: '',
@@ -253,6 +258,37 @@ function openAutoPurchasePlaceholder() {
   setFeedback('自动采购备件功能待开发。', 'info')
 }
 
+async function openEquipmentQrModal(equipment) {
+  isGeneratingEquipmentQr.value = true
+  activeEquipmentQr.value = equipment
+  equipmentQrCodeDataUrl.value = ''
+  isEquipmentQrModalOpen.value = true
+
+  try {
+    equipmentQrCodeDataUrl.value = await QRCode.toDataURL(equipment.equipmentCode, {
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 280,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+    })
+  } catch {
+    setFeedback('生成设备二维码失败，请重试。', 'error')
+    closeEquipmentQrModal()
+  } finally {
+    isGeneratingEquipmentQr.value = false
+  }
+}
+
+function closeEquipmentQrModal() {
+  isEquipmentQrModalOpen.value = false
+  isGeneratingEquipmentQr.value = false
+  equipmentQrCodeDataUrl.value = ''
+  activeEquipmentQr.value = null
+}
+
 function goBack() {
   goBackOrHome(router)
 }
@@ -481,6 +517,50 @@ onMounted(async () => {
                 </div>
                 <div class="action-row">
                   <span class="status-pill">{{ equipment.status }}</span>
+                  <button
+                    class="button button-ghost button-icon"
+                    type="button"
+                    :aria-label="`查看 ${equipment.equipmentCode} 二维码`"
+                    @click="openEquipmentQrModal(equipment)"
+                  >
+                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path
+                        d="M3 6V4.75C3 3.78 3.78 3 4.75 3H6"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.4"
+                      />
+                      <path
+                        d="M10 3h1.25C12.22 3 13 3.78 13 4.75V6"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.4"
+                      />
+                      <path
+                        d="M13 10v1.25c0 .97-.78 1.75-1.75 1.75H10"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.4"
+                      />
+                      <path
+                        d="M6 13H4.75C3.78 13 3 12.22 3 11.25V10"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.4"
+                      />
+                      <path
+                        d="M6 6h1.5v1.5H6zM8.5 8.5H10v1.5H8.5zM6 10h1.5v1.5H6zM8.5 6H10v1.5H8.5z"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.1"
+                      />
+                    </svg>
+                  </button>
                   <button class="button button-ghost" type="button" @click="editEquipment(equipment)">编辑</button>
                   <button class="button button-danger" type="button" @click="removeEquipment(equipment.id)">
                     删除
@@ -791,6 +871,52 @@ onMounted(async () => {
             </button>
           </div>
         </form>
+      </section>
+    </div>
+
+    <div v-if="isEquipmentQrModalOpen" class="modal-overlay" @click.self="closeEquipmentQrModal">
+      <section class="surface-card modal-card qr-modal-card">
+        <div class="section-headline modal-headline">
+          <div>
+            <h3 class="section-title">{{ activeEquipmentQr?.equipmentCode || '设备编码二维码' }}</h3>
+          </div>
+          <button class="button button-ghost button-icon" type="button" aria-label="关闭弹出框" @click="closeEquipmentQrModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div class="qr-preview">
+          <div class="qr-preview__panel">
+            <div v-if="isGeneratingEquipmentQr" class="qr-preview__loading">二维码生成中...</div>
+            <img
+              v-else-if="equipmentQrCodeDataUrl"
+              class="qr-preview__image"
+              :src="equipmentQrCodeDataUrl"
+              :alt="`${activeEquipmentQr?.equipmentCode || '设备'}二维码`"
+            />
+            <div v-else class="qr-preview__loading">暂无可显示的二维码</div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <a
+            v-if="equipmentQrCodeDataUrl && activeEquipmentQr?.equipmentCode"
+            class="button button-success"
+            :href="equipmentQrCodeDataUrl"
+            :download="`${activeEquipmentQr.equipmentCode}.png`"
+          >
+            下载二维码
+          </a>
+          <button class="button button-ghost" type="button" @click="closeEquipmentQrModal">关闭</button>
+        </div>
       </section>
     </div>
 
@@ -1190,8 +1316,38 @@ select:focus {
   width: min(980px, 100%);
 }
 
+.qr-modal-card {
+  width: min(560px, 100%);
+}
+
 .modal-headline {
   margin-bottom: 12px;
+}
+
+.qr-preview {
+  display: grid;
+}
+
+.qr-preview__panel {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  padding: 20px;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  background: #f6f8fa;
+}
+
+.qr-preview__image {
+  width: min(280px, 100%);
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.qr-preview__loading {
+  color: var(--color-text-soft);
 }
 
 .modal-actions {
