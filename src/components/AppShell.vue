@@ -1,14 +1,149 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { RouterLink, RouterView, useRouter } from 'vue-router'
+import QrScanner from 'qr-scanner'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import { useAccessStore } from '../stores/access'
+import { useMessageToastStore } from '../stores/messageToast'
 
+const route = useRoute()
 const router = useRouter()
 const accessStore = useAccessStore()
+const toastStore = useMessageToastStore()
 const isLoggingOut = ref(false)
+const isScanModalOpen = ref(false)
+const isStartingScan = ref(false)
+const isHandlingScan = ref(false)
+const scanVideoElement = ref(null)
+
+let qrScanner = null
 
 const currentRoleLabel = computed(() => accessStore.activeRoles.map((role) => role.name).join(' / '))
+const canScanInspectionTasks = computed(() => accessStore.canAccessFeature('inspection-tasks'))
+const showMobileScanButton = computed(() => route.name === 'home' && canScanInspectionTasks.value)
+
+function parseEquipmentIdFromQr(rawValue) {
+  const value = String(rawValue ?? '').trim()
+
+  if (!value) {
+    return ''
+  }
+
+  try {
+    const parsed = JSON.parse(value)
+    const objectValue = parsed && typeof parsed === 'object' ? parsed : null
+    const embeddedId = objectValue?.equipmentId ?? objectValue?.deviceId ?? objectValue?.id
+
+    if (typeof embeddedId === 'string' && embeddedId.trim()) {
+      return embeddedId.trim()
+    }
+  } catch {
+  }
+
+  try {
+    const url = new URL(value)
+    const embeddedId =
+      url.searchParams.get('equipmentId') ??
+      url.searchParams.get('deviceId') ??
+      url.searchParams.get('id') ??
+      ''
+
+    if (embeddedId.trim()) {
+      return embeddedId.trim()
+    }
+  } catch {
+  }
+
+  const keyValueMatch = value.match(/(?:equipmentId|equipment_id|deviceId|device_id|id)\s*[:=]\s*([^\s,;]+)/i)
+
+  if (keyValueMatch?.[1]) {
+    return keyValueMatch[1].trim()
+  }
+
+  return value
+}
+
+function destroyScanner() {
+  if (!qrScanner) {
+    return
+  }
+
+  qrScanner.stop()
+  qrScanner.destroy()
+  qrScanner = null
+}
+
+function closeScanModal() {
+  isScanModalOpen.value = false
+  isHandlingScan.value = false
+  destroyScanner()
+}
+
+async function handleScanResult(result) {
+  if (isHandlingScan.value) {
+    return
+  }
+
+  isHandlingScan.value = true
+
+  const rawValue = typeof result === 'string' ? result : result?.data ?? ''
+  const equipmentId = parseEquipmentIdFromQr(rawValue)
+
+  if (!equipmentId) {
+    isHandlingScan.value = false
+    toastStore.show('二维码中未识别到设备ID，请重新扫描。', 'error')
+    return
+  }
+
+  closeScanModal()
+
+  await router.push({
+    name: 'inspection-task-management',
+    query: {
+      createTask: '1',
+      equipmentId,
+    },
+  })
+}
+
+async function openScanModal() {
+  if (isStartingScan.value) {
+    return
+  }
+
+  isStartingScan.value = true
+  isHandlingScan.value = false
+
+  try {
+    const hasCamera = await QrScanner.hasCamera()
+
+    if (!hasCamera) {
+      throw new Error('当前设备未检测到可用摄像头。')
+    }
+
+    isScanModalOpen.value = true
+    await nextTick()
+
+    if (!scanVideoElement.value) {
+      throw new Error('无法打开扫码界面，请重试。')
+    }
+
+    destroyScanner()
+    qrScanner = new QrScanner(scanVideoElement.value, handleScanResult, {
+      preferredCamera: 'environment',
+      highlightScanRegion: true,
+      highlightCodeOutline: true,
+      returnDetailedScanResult: true,
+    })
+
+    await qrScanner.start()
+  } catch (error) {
+    closeScanModal()
+    toastStore.show(error instanceof Error ? error.message : '打开扫码失败，请稍后重试。', 'error')
+  } finally {
+    isStartingScan.value = false
+  }
+}
 
 async function handleLogout() {
   if (isLoggingOut.value) {
@@ -24,6 +159,10 @@ async function handleLogout() {
     isLoggingOut.value = false
   }
 }
+
+onBeforeUnmount(() => {
+  destroyScanner()
+})
 </script>
 
 <template>
@@ -67,6 +206,52 @@ async function handleLogout() {
             <p class="user-role">{{ currentRoleLabel || '未分配角色' }}</p>
           </div>
           <button
+            v-if="showMobileScanButton"
+            class="shell-scan"
+            type="button"
+            :disabled="isStartingScan"
+            :aria-label="isStartingScan ? '扫码启动中' : '扫描设备二维码'"
+            @click="openScanModal"
+          >
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M3 6V4.75C3 3.78 3.78 3 4.75 3H6"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+              <path
+                d="M10 3h1.25C12.22 3 13 3.78 13 4.75V6"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+              <path
+                d="M13 10v1.25c0 .97-.78 1.75-1.75 1.75H10"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+              <path
+                d="M6 13H4.75C3.78 13 3 12.22 3 11.25V10"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+              <path
+                d="M6 6h1.5v1.5H6zM8.5 8.5H10v1.5H8.5zM6 10h1.5v1.5H6zM8.5 6H10v1.5H8.5z"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.1"
+              />
+            </svg>
+          </button>
+          <button
             class="shell-signout"
             type="button"
             :disabled="isLoggingOut"
@@ -109,6 +294,33 @@ async function handleLogout() {
     <footer class="shell-footer">
       <p class="shell-footer__copy">© 2026 METTLER TOLEDO, Inc.</p>
     </footer>
+
+    <div v-if="isScanModalOpen" class="scan-modal" @click.self="closeScanModal">
+      <section class="scan-modal__card">
+        <div class="scan-modal__header">
+          <div>
+            <p class="scan-modal__kicker">QR Scan</p>
+            <h2 class="scan-modal__title">扫描设备二维码</h2>
+          </div>
+          <button class="shell-scan shell-scan--modal" type="button" aria-label="关闭扫码" @click="closeScanModal">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.4"
+              />
+            </svg>
+          </button>
+        </div>
+        <div class="scan-modal__viewport">
+          <video ref="scanVideoElement" class="scan-modal__video" autoplay playsinline muted></video>
+          <div class="scan-modal__frame" aria-hidden="true"></div>
+        </div>
+        <p class="scan-modal__hint">请将包含设备ID的二维码置于取景框内，识别后将自动打开新建点检任务。</p>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -201,6 +413,38 @@ async function handleLogout() {
   color: rgba(255, 255, 255, 0.76);
 }
 
+.shell-scan {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.shell-scan:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.shell-scan:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.shell-scan svg {
+  width: 16px;
+  height: 16px;
+}
+
 .shell-signout {
   display: inline-flex;
   align-items: center;
@@ -254,6 +498,81 @@ async function handleLogout() {
   text-align: center;
 }
 
+.scan-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 16, 28, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.scan-modal__card {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #0f223c;
+  color: #ffffff;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+}
+
+.scan-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scan-modal__kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.scan-modal__title {
+  margin: 4px 0 0;
+  font-size: 1.1rem;
+}
+
+.scan-modal__viewport {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  background: #08131f;
+}
+
+.scan-modal__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scan-modal__frame {
+  position: absolute;
+  inset: 14%;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 20px;
+  box-shadow: 0 0 0 999px rgba(8, 19, 31, 0.32);
+}
+
+.scan-modal__hint {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.shell-scan--modal {
+  display: inline-flex;
+}
+
 @media (max-width: 980px) {
   .shell-header__row {
     padding: 10px 12px;
@@ -273,6 +592,13 @@ async function handleLogout() {
 }
 
 @media (max-width: 640px) {
+  .shell-scan {
+    display: inline-flex;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+  }
+
   .shell-home {
     width: 32px;
     height: 32px;
@@ -313,6 +639,15 @@ async function handleLogout() {
 
   .shell-signout__label {
     display: none;
+  }
+
+  .scan-modal {
+    padding: 10px;
+  }
+
+  .scan-modal__card {
+    padding: 14px;
+    border-radius: 16px;
   }
 }
 </style>

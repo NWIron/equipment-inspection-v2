@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useInspectionTaskStore } from '../stores/inspectionTasks'
 import { useMessageToastStore } from '../stores/messageToast'
@@ -11,6 +11,7 @@ import {
   toDateTimeInputValue as toDateTimeInput,
 } from '../utils/datetime'
 
+const route = useRoute()
 const router = useRouter()
 const inspectionTaskStore = useInspectionTaskStore()
 const toastStore = useMessageToastStore()
@@ -67,9 +68,14 @@ function resetTaskForm() {
   taskForm.status = statusOptions.value[0] ?? '待执行'
 }
 
-function openTaskModal() {
+function openTaskModal(initialValues = {}) {
   clearFeedback()
   resetTaskForm()
+
+  if (typeof initialValues.equipmentId === 'string' && initialValues.equipmentId) {
+    taskForm.equipmentId = initialValues.equipmentId
+  }
+
   isTaskModalOpen.value = true
 }
 
@@ -113,6 +119,33 @@ async function removeTask(taskId) {
   }
 }
 
+async function consumeScannedEquipmentQuery() {
+  const shouldCreateTask = String(route.query.createTask ?? '') === '1'
+  const scannedEquipmentId = typeof route.query.equipmentId === 'string' ? route.query.equipmentId : ''
+
+  if (!shouldCreateTask) {
+    return
+  }
+
+  if (!scannedEquipmentId) {
+    setFeedback('二维码中未包含设备ID，请重新扫描。', 'error')
+    await router.replace({ name: 'inspection-task-management' })
+    return
+  }
+
+  const scannedEquipment = equipmentOptions.value.find((equipment) => equipment.id === scannedEquipmentId)
+
+  if (!scannedEquipment) {
+    setFeedback('未找到二维码对应的设备，请确认二维码内容是否正确。', 'error')
+    await router.replace({ name: 'inspection-task-management' })
+    return
+  }
+
+  openTaskModal({ equipmentId: scannedEquipment.id })
+  setFeedback(`已识别设备 ${scannedEquipment.equipmentCode}，请继续完善点检任务信息。`, 'info')
+  await router.replace({ name: 'inspection-task-management' })
+}
+
 onMounted(async () => {
   const result = await inspectionTaskStore.initialize()
 
@@ -122,6 +155,7 @@ onMounted(async () => {
   }
 
   resetTaskForm()
+  await consumeScannedEquipmentQuery()
 })
 </script>
 
