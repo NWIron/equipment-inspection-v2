@@ -146,7 +146,7 @@ export const messages = {
         phaseLabel: 'Report preview',
       },
       auditLogs: {
-        title: '日志审计',
+        title: 'Audit Logs',
         summary: 'Record create, update, and delete operations across the system with filterable reporting.',
         category: 'Governance',
         phaseLabel: 'Phase 1 complete',

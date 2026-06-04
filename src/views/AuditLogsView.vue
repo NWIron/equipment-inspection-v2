@@ -88,6 +88,7 @@ const filters = reactive({
 const rows = computed(() => auditLogStore.rows)
 const filterOptions = computed(() => auditLogStore.filterOptions)
 const summary = computed(() => auditLogStore.summary)
+const auditLogFeatureTitle = computed(() => getFeatureLabel('audit-logs', pickLocaleText('日志审计', 'Audit Logs')))
 
 function goBack() {
   goBackOrHome(router)
@@ -153,7 +154,7 @@ onMounted(loadAuditLogs)
           </svg>
         </button>
         <div class="page-header-copy">
-          <h2 class="page-title">日志审计</h2>
+          <h2 class="page-title">{{ auditLogFeatureTitle }}</h2>
         </div>
       </div>
       <button class="button button-success" type="button" :disabled="auditLogStore.isLoading" @click="loadAuditLogs">
@@ -292,13 +293,13 @@ onMounted(loadAuditLogs)
             </thead>
             <tbody>
               <tr v-for="row in rows" :key="row.id">
-                <td>{{ formatDateTimeDisplay(row.createdAt) }}</td>
-                <td>{{ row.operatorName || pickLocaleText('系统', 'System') }}</td>
-                <td>{{ getFeatureLabel(row.featureId, row.featureTitle) }}</td>
-                <td>
+                <td :data-label="pickLocaleText('时间', 'Time')">{{ formatDateTimeDisplay(row.createdAt) }}</td>
+                <td :data-label="pickLocaleText('操作人', 'Operator')">{{ row.operatorName || pickLocaleText('系统', 'System') }}</td>
+                <td :data-label="pickLocaleText('模块', 'Module')">{{ getFeatureLabel(row.featureId, row.featureTitle) }}</td>
+                <td :data-label="pickLocaleText('操作', 'Action')">
                   <span :class="getActionBadgeClass(row.action)">{{ getActionLabel(row.action) }}</span>
                 </td>
-                <td>
+                <td :data-label="pickLocaleText('资源', 'Resource')">
                   <strong>{{ getResourceLabel(row.resourceType) }}</strong>
                   <div class="table-subtext">{{ row.resourceLabel || row.resourceId || pickLocaleText('未记录摘要', 'No summary') }}</div>
                 </td>
@@ -387,6 +388,10 @@ select:focus {
   overflow-x: auto;
 }
 
+table tbody td:first-child {
+  white-space: nowrap;
+}
+
 .audit-badge {
   display: inline-flex;
   align-items: center;
@@ -420,12 +425,108 @@ select:focus {
 }
 
 @media (max-width: 900px) {
+  .page-header {
+    align-items: stretch;
+  }
+
+  .page-header-main {
+    align-items: flex-start;
+  }
+
+  .page-header > .button {
+    width: 100%;
+  }
+
   .section-card {
     padding: 16px;
   }
 
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric-card {
+    padding: 14px;
+  }
+
+  .metric-value {
+    font-size: 1.6rem;
+  }
+
+  .audit-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
   .audit-filter-actions {
     grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .audit-filter-actions .button {
+    width: 100%;
+  }
+
+  .table-scroll {
+    overflow: visible;
+  }
+
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: 100%;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  tbody tr {
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+    background: #f6f8fa;
+    box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04);
+  }
+
+  tbody td {
+    display: grid;
+    grid-template-columns: minmax(72px, 88px) minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+  }
+
+  tbody td + td {
+    margin-top: 10px;
+  }
+
+  tbody td::before {
+    content: attr(data-label);
+    color: var(--color-text-soft);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  tbody td:first-child {
+    white-space: normal;
+  }
+
+  .audit-badge {
+    justify-self: start;
+  }
+
+  .table-subtext {
+    margin-top: 6px;
   }
 }
 </style>
