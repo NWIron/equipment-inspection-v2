@@ -60,6 +60,12 @@ export const messages = {
         category: 'Analytics',
         phaseLabel: '报表预览',
       },
+      auditLogs: {
+        title: '日志审计',
+        summary: '记录系统内新增、更新、删除操作，并提供筛选报表。',
+        category: 'Governance',
+        phaseLabel: '一期完成',
+      },
       accessManagement: {
         title: '用户与权限管理',
         summary: '维护用户主数据、角色与功能卡片授权关系。',
@@ -138,6 +144,12 @@ export const messages = {
         summary: 'Combine inspection, maintenance, and equipment data for analytics dashboards.',
         category: 'Analytics',
         phaseLabel: 'Report preview',
+      },
+      auditLogs: {
+        title: '日志审计',
+        summary: 'Record create, update, and delete operations across the system with filterable reporting.',
+        category: 'Governance',
+        phaseLabel: 'Phase 1 complete',
       },
       accessManagement: {
         title: 'Users and Access',

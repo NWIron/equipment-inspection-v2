@@ -3,7 +3,8 @@ const FEATURE_SORT_ORDER = {
   'inspection-tasks': 20,
   'work-orders': 30,
   'data-analysis': 40,
-  'access-management': 50,
+  'audit-logs': 50,
+  'access-management': 60,
 }
 
 async function ensureAccessSeedData(env) {
@@ -22,6 +23,20 @@ async function ensureAccessSeedData(env) {
     env.DB.prepare(
       'INSERT OR IGNORE INTO role_features (role_id, feature_id) VALUES (?1, ?2)',
     ).bind('role-administrator', 'data-analysis'),
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO features (id, title, summary, category, path, sort_order)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
+    ).bind(
+      'audit-logs',
+      '日志审计',
+      '记录系统内新增、更新、删除操作，并提供筛选报表。',
+      'Governance',
+      '/modules/audit-logs',
+      50,
+    ),
+    env.DB.prepare(
+      'INSERT OR IGNORE INTO role_features (role_id, feature_id) VALUES (?1, ?2)',
+    ).bind('role-administrator', 'audit-logs'),
   ])
 }
 

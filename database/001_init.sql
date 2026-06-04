@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS work_order_photos;
 DROP TABLE IF EXISTS work_order_spare_parts;
 DROP TABLE IF EXISTS work_order_tasks;
 DROP TABLE IF EXISTS work_orders;
+DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS equipment_spare_parts;
 DROP TABLE IF EXISTS spare_parts;
 DROP TABLE IF EXISTS inspection_task_photos;
@@ -67,6 +68,22 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
   expires_at TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id TEXT PRIMARY KEY,
+  feature_id TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  action TEXT NOT NULL,
+  resource_id TEXT,
+  resource_label TEXT NOT NULL DEFAULT '',
+  operator_user_id TEXT,
+  operator_name TEXT NOT NULL DEFAULT '',
+  request_path TEXT NOT NULL,
+  request_method TEXT NOT NULL,
+  payload_json TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (operator_user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS inspection_items (
@@ -247,6 +264,10 @@ CREATE TABLE IF NOT EXISTS work_order_tasks (
 
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_feature_id ON audit_logs(feature_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_operator_user_id ON audit_logs(operator_user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role_id ON user_roles(role_id);
 CREATE INDEX IF NOT EXISTS idx_role_features_feature_id ON role_features(feature_id);
 CREATE INDEX IF NOT EXISTS idx_task_list_items_inspection_item_id ON task_list_items(inspection_item_id);
@@ -268,6 +289,7 @@ CREATE INDEX IF NOT EXISTS idx_work_order_tasks_work_order_id ON work_order_task
 CREATE INDEX IF NOT EXISTS idx_work_order_tasks_engineer_user_id ON work_order_tasks(engineer_user_id);
 
 DELETE FROM auth_sessions;
+DELETE FROM audit_logs;
 DELETE FROM work_order_photos;
 DELETE FROM work_order_spare_parts;
 DELETE FROM work_order_tasks;
@@ -295,7 +317,8 @@ VALUES
   ('inspection-tasks', '点检任务', '编排点检计划、执行清单与异常闭环任务。', 'Inspection', '/modules/inspection-tasks', 20),
   ('work-orders', '维修工单', '管理报修、派工、维修记录与状态跟踪。', 'Maintenance', '/modules/work-orders', 30),
   ('data-analysis', '数据分析', '汇总点检、维修与设备数据，支持后续分析看板扩展。', 'Analytics', '/modules/data-analysis', 40),
-  ('access-management', '用户与权限管理', '维护用户主数据、角色与功能卡片授权关系。', 'Security', '/admin/access', 50);
+  ('audit-logs', '日志审计', '记录系统内新增、更新、删除操作，并提供筛选报表。', 'Governance', '/modules/audit-logs', 50),
+  ('access-management', '用户与权限管理', '维护用户主数据、角色与功能卡片授权关系。', 'Security', '/admin/access', 60);
 
 INSERT OR REPLACE INTO roles (id, name, description, is_system)
 VALUES
@@ -309,6 +332,7 @@ VALUES
   ('role-administrator', 'inspection-tasks'),
   ('role-administrator', 'work-orders'),
   ('role-administrator', 'data-analysis'),
+  ('role-administrator', 'audit-logs'),
   ('role-administrator', 'access-management'),
   ('role-inspector', 'inspection-tasks'),
   ('role-equipment-engineer', 'equipment'),

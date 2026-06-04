@@ -66,6 +66,12 @@ const router = createRouter({
           meta: { featureId: 'data-analysis' },
         },
         {
+          path: 'modules/audit-logs',
+          name: 'audit-logs',
+          component: () => import('../views/AuditLogsView.vue'),
+          meta: { featureId: 'audit-logs' },
+        },
+        {
           path: 'modules/:moduleId',
           name: 'module-placeholder',
           component: () => import('../views/ModulePlaceholderView.vue'),
