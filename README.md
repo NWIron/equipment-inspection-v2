@@ -68,6 +68,8 @@ Remove-Item Env:NODE_TLS_REJECT_UNAUTHORIZED -ErrorAction SilentlyContinue
 - 多状态点检任务、异常结果、维修工单、工单任务和关联备件
 - 用于日志审计模块展示的新增、更新、删除审计记录
 
+如果需要通过可交互矢量图讲解系统设计思路和整体数据流，可直接打开 [docs/system-data-flow.svg](docs/system-data-flow.svg)。
+
 ## 构建
 
 ```sh

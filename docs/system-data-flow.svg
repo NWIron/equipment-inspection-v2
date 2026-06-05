@@ -1,0 +1,372 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1180 980" role="img" aria-labelledby="title desc">
+  <title id="title">设备点检系统交互式数据流图</title>
+  <desc id="desc">通过角色、前端模块和 Pages Functions API 展示整个系统的关键业务流。点击顶部场景按钮或任意模块卡片可高亮对应业务闭环。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f4efe6" />
+      <stop offset="55%" stop-color="#f9f7f3" />
+      <stop offset="100%" stop-color="#e5ecf2" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#10243a" flood-opacity="0.12" />
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7c8b97" />
+    </marker>
+    <style><![CDATA[
+      svg {
+        font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+        background: #f5f2eb;
+      }
+      .small {
+        font-size: 14px;
+      }
+      .muted {
+        fill: #6a7680;
+      }
+      .section-frame {
+        fill: rgba(255,255,255,0.55);
+        stroke: rgba(25,54,83,0.14);
+        stroke-width: 1.5;
+        rx: 20;
+        filter: url(#shadow);
+      }
+      .section-title {
+        font-size: 22px;
+        font-weight: 700;
+        fill: #14314f;
+      }
+      .button {
+        cursor: pointer;
+      }
+      .button rect {
+        fill: rgba(255,255,255,0.84);
+        stroke: #9aa9b5;
+        stroke-width: 1.4;
+        rx: 14;
+        transition: 0.2s ease;
+      }
+      .button text {
+        font-size: 15px;
+        font-weight: 700;
+        fill: #284764;
+        pointer-events: none;
+      }
+      .button.active rect,
+      .button:hover rect {
+        fill: #173c63;
+        stroke: #173c63;
+      }
+      .button.active text,
+      .button:hover text {
+        fill: #ffffff;
+      }
+      .node-card {
+        cursor: pointer;
+      }
+      .node-card rect {
+        stroke-width: 1.6;
+        transition: 0.2s ease;
+      }
+      .node-card .node-title {
+        font-size: 16px;
+        font-weight: 700;
+        fill: #18324d;
+        pointer-events: none;
+      }
+      .node-card .node-subtitle {
+        font-size: 12px;
+        fill: #5f6d7a;
+        pointer-events: none;
+      }
+      .node-card:hover rect,
+      .node-card.selected rect {
+        stroke: #0f5f91;
+        stroke-width: 2.8;
+      }
+      .node-card.dimmed {
+        opacity: 0.22;
+      }
+      .edge {
+        fill: none;
+        stroke: #7c8b97;
+        stroke-width: 1.8;
+        marker-end: url(#arrow);
+        vector-effect: non-scaling-stroke;
+        transition: 0.2s ease;
+      }
+      .edge.active {
+        stroke: #1b6ea8;
+        stroke-width: 2.5;
+      }
+      .edge.dimmed {
+        opacity: 0.18;
+      }
+      .edge-label {
+        font-size: 11px;
+        fill: #607180;
+      }
+      .legend-chip {
+        rx: 10;
+      }
+      .legend-text {
+        font-size: 13px;
+        fill: #314b61;
+      }
+      .pill {
+        fill: #eff5fa;
+        stroke: #b8c7d4;
+        stroke-width: 1;
+        rx: 14;
+      }
+      .pill-text {
+        font-size: 13px;
+        font-weight: 700;
+        fill: #2f536f;
+      }
+    ]]></style>
+  </defs>
+
+  <rect x="0" y="0" width="1180" height="980" fill="url(#bg)" />
+
+  <text x="70" y="72" font-size="38" font-weight="800" fill="#173c63">设备点检系统交互式数据流图</text>
+  <text x="70" y="105" font-size="18" fill="#5b6a77">点击顶部场景按钮切换视角，点击任意模块卡片高亮对应流程。图示聚焦裁判最需要理解的主业务链路。</text>
+
+  <g id="focusButtons">
+    <g class="button active" data-focus="overview" transform="translate(70 138)">
+      <rect width="108" height="42" />
+      <text x="54" y="27" text-anchor="middle">系统全景</text>
+    </g>
+    <g class="button" data-focus="access" transform="translate(192 138)">
+      <rect width="108" height="42" />
+      <text x="54" y="27" text-anchor="middle">权限登录</text>
+    </g>
+    <g class="button" data-focus="masterdata" transform="translate(314 138)">
+      <rect width="108" height="42" />
+      <text x="54" y="27" text-anchor="middle">基础数据</text>
+    </g>
+    <g class="button" data-focus="inspection" transform="translate(436 138)">
+      <rect width="108" height="42" />
+      <text x="54" y="27" text-anchor="middle">点检闭环</text>
+    </g>
+    <g class="button" data-focus="workorder" transform="translate(558 138)">
+      <rect width="108" height="42" />
+      <text x="54" y="27" text-anchor="middle">工单闭环</text>
+    </g>
+    <g class="button" data-focus="governance" transform="translate(680 138)">
+      <rect width="108" height="42" />
+      <text x="54" y="27" text-anchor="middle">审计分析</text>
+    </g>
+  </g>
+
+  <g transform="translate(70 210)">
+    <rect class="section-frame" x="0" y="0" width="220" height="618" />
+    <text class="section-title" x="26" y="42">业务角色</text>
+    <text class="small muted" x="26" y="68">谁发起流程、谁执行流程</text>
+
+    <g class="node-card" data-tags="overview access masterdata inspection governance" data-name="管理员" data-subtitle="系统配置入口" data-lines="负责用户、角色、功能卡片授权。|维护设备、点检清单、点检项、故障代码和备件。|也可以作为调度角色创建点检任务与查看分析结果。" transform="translate(22 110)">
+      <rect x="0" y="0" width="176" height="118" rx="16" fill="#fff5e8" stroke="#d7b07a" />
+      <text class="node-title" x="18" y="34">管理员</text>
+      <text class="node-subtitle" x="18" y="58">权限与主数据</text>
+      <text class="node-subtitle" x="18" y="78">审计与分析</text>
+    </g>
+
+    <g class="node-card" data-tags="overview inspection workorder" data-name="点检员" data-subtitle="现场任务执行" data-lines="从待办任务进入点检执行页面。|回填每个点检项的结果与异常说明。|当结果异常时，可推动后续维修工单。" transform="translate(22 262)">
+      <rect x="0" y="0" width="176" height="118" rx="16" fill="#e9f7f2" stroke="#75b899" />
+      <text class="node-title" x="18" y="34">点检员</text>
+      <text class="node-subtitle" x="18" y="58">任务执行</text>
+      <text class="node-subtitle" x="18" y="78">异常反馈</text>
+    </g>
+
+    <g class="node-card" data-tags="overview workorder governance" data-name="设备工程师" data-subtitle="维修闭环执行" data-lines="接收由异常触发或人工创建的维修工单。|拆解工单任务并关联备件需求。|更新工单处理状态，形成后续审计与分析输入。" transform="translate(22 414)">
+      <rect x="0" y="0" width="176" height="118" rx="16" fill="#ebf2fb" stroke="#7fa8d3" />
+      <text class="node-title" x="18" y="34">设备工程师</text>
+      <text class="node-subtitle" x="18" y="58">维修处理</text>
+      <text class="node-subtitle" x="18" y="78">备件与状态</text>
+    </g>
+  </g>
+
+  <g transform="translate(320 210)">
+    <rect class="section-frame" x="0" y="0" width="430" height="618" />
+    <text class="section-title" x="28" y="42">前端模块</text>
+    <text class="small muted" x="28" y="68">首页承接入口，业务页推动流程</text>
+
+    <g class="node-card" data-tags="overview access" data-name="登录与首页" data-subtitle="登录 / 角色首页" data-lines="登录页通过邮箱与密码完成鉴权。|首页根据角色和 featureId 显示可访问模块。|路由守卫负责 guestOnly、requiresAuth 和 feature 权限校验。" transform="translate(28 108)">
+      <rect x="0" y="0" width="170" height="92" rx="14" fill="#fffdf8" stroke="#d1b98a" />
+      <text class="node-title" x="18" y="34">登录与首页</text>
+      <text class="node-subtitle" x="18" y="58">登录 / 角色首页</text>
+    </g>
+
+    <g class="node-card" data-tags="overview access" data-name="用户与权限管理" data-subtitle="用户 / 角色 / 授权" data-lines="管理员维护 users、roles 与 role_features。|权限结果决定首页卡片与路由可见性。|典型写操作会进入统一审计中间件。" transform="translate(228 108)">
+      <rect x="0" y="0" width="174" height="92" rx="14" fill="#fffdf8" stroke="#d1b98a" />
+      <text class="node-title" x="18" y="34">用户与权限管理</text>
+      <text class="node-subtitle" x="18" y="58">用户 / 角色 / 授权</text>
+    </g>
+
+    <g class="node-card" data-tags="overview masterdata inspection workorder" data-name="设备管理" data-subtitle="设备与主数据维护" data-lines="设备管理模块负责设备资产、点检清单、点检项、故障代码和备件。|这些主数据决定点检任务可执行内容与维修工单可关联资源。|它是后续流程的基础数据源。" transform="translate(28 236)">
+      <rect x="0" y="0" width="170" height="104" rx="14" fill="#f6fbff" stroke="#89b5d6" />
+      <text class="node-title" x="18" y="36">设备管理</text>
+      <text class="node-subtitle" x="18" y="60">设备 / 清单 / 备件 / 故障码</text>
+    </g>
+
+    <g class="node-card" data-tags="overview inspection workorder" data-name="点检任务" data-subtitle="创建 / 执行 / 结果" data-lines="点检任务从设备绑定的清单中自动带出点检项。|执行页面会回填 inspection_task_results，并同步更新 inspection_tasks 状态。|异常结果会成为维修工单的重要输入。" transform="translate(228 236)">
+      <rect x="0" y="0" width="174" height="104" rx="14" fill="#f6fbff" stroke="#89b5d6" />
+      <text class="node-title" x="18" y="36">点检任务</text>
+      <text class="node-subtitle" x="18" y="60">创建 / 执行 / 结果</text>
+    </g>
+
+    <g class="node-card" data-tags="overview workorder governance" data-name="维修工单" data-subtitle="工单 / 任务 / 备件" data-lines="工单可从异常点检结果衍生，也可人工创建。|工单下挂任务与备件需求，支撑工程师处理过程。|每次状态变更都会成为审计和分析的输入。" transform="translate(28 376)">
+      <rect x="0" y="0" width="170" height="104" rx="14" fill="#f4f8ff" stroke="#799fcb" />
+      <text class="node-title" x="18" y="36">维修工单</text>
+      <text class="node-subtitle" x="18" y="60">工单 / 任务 / 备件</text>
+    </g>
+
+    <g class="node-card" data-tags="overview governance" data-name="日志审计" data-subtitle="写操作筛选报表" data-lines="日志审计模块读取 audit_logs 的聚合结果。|提供动作、资源类型、模块等维度筛选。|重点体现系统的可追溯性与治理能力。" transform="translate(228 376)">
+      <rect x="0" y="0" width="174" height="104" rx="14" fill="#f4f8ff" stroke="#799fcb" />
+      <text class="node-title" x="18" y="36">日志审计</text>
+      <text class="node-subtitle" x="18" y="60">写操作筛选报表</text>
+    </g>
+
+    <g class="node-card" data-tags="overview governance" data-name="数据分析" data-subtitle="业务聚合看板" data-lines="分析页聚合设备、点检任务、工单和备件等数据。|适合在 DEMO 末尾从管理层视角收口。|它不直接产生业务写入，但依赖前面所有模块的累计数据。" transform="translate(28 516)">
+      <rect x="0" y="0" width="170" height="78" rx="14" fill="#eef7ff" stroke="#76a8d1" />
+      <text class="node-title" x="18" y="34">数据分析</text>
+      <text class="node-subtitle" x="18" y="56">设备 / 点检 / 工单看板</text>
+    </g>
+  </g>
+
+  <g transform="translate(780 210)">
+    <rect class="section-frame" x="0" y="0" width="360" height="618" />
+    <text class="section-title" x="26" y="42">API 层</text>
+    <text class="small muted" x="26" y="68">前端统一访问，关键写请求经过审计中间件</text>
+
+    <g class="node-card" data-tags="overview access" data-name="auth + bootstrap" data-subtitle="登录 / 会话 / 初始化" data-lines="auth 负责登录、会话和鉴权上下文。|bootstrap 为首页或模块准备初始化数据。|它把前端页面与 D1 数据底座连接起来。" transform="translate(26 108)">
+      <rect x="0" y="0" width="146" height="98" rx="14" fill="#fffaf4" stroke="#d8b785" />
+      <text class="node-title" x="16" y="34">auth / bootstrap</text>
+      <text class="node-subtitle" x="16" y="58">登录 / 会话 / 初始化</text>
+    </g>
+
+    <g class="node-card" data-tags="overview access" data-name="users + roles API" data-subtitle="用户 / 角色接口" data-lines="users、roles、role_features 是权限模型的核心接口。|变更结果同时影响首页功能显示和路由权限。|属于典型高治理敏感度写操作。" transform="translate(192 108)">
+      <rect x="0" y="0" width="142" height="98" rx="14" fill="#fffaf4" stroke="#d8b785" />
+      <text class="node-title" x="16" y="34">权限 API</text>
+      <text class="node-subtitle" x="16" y="58">用户 / 角色 / 授权</text>
+    </g>
+
+    <g class="node-card" data-tags="overview masterdata inspection workorder" data-name="equipment family API" data-subtitle="设备 / 清单 / 备件接口" data-lines="equipment、task-lists、inspection-items、fault-codes、spare-parts 共同构成基础数据接口。|这些接口为点检和维修两个流程提供静态主数据来源。" transform="translate(26 248)">
+      <rect x="0" y="0" width="308" height="98" rx="14" fill="#f6fbff" stroke="#88b6d8" />
+      <text class="node-title" x="16" y="34">主数据 API</text>
+      <text class="node-subtitle" x="16" y="58">设备 / 清单 / 点检项 / 故障码 / 备件</text>
+    </g>
+
+    <g class="node-card" data-tags="overview inspection workorder" data-name="inspection-tasks API" data-subtitle="任务 / 结果接口" data-lines="inspection-tasks API 负责点检任务主记录和结果记录。|执行时既会读取设备主数据，也会写入任务状态和 inspection_task_results。|它是异常到工单闭环的起点。" transform="translate(26 388)">
+      <rect x="0" y="0" width="146" height="98" rx="14" fill="#f5f9ff" stroke="#7ea6cd" />
+      <text class="node-title" x="16" y="34">点检 API</text>
+      <text class="node-subtitle" x="16" y="58">任务 / 结果接口</text>
+    </g>
+
+    <g class="node-card" data-tags="overview workorder governance" data-name="work-orders API" data-subtitle="工单 / 备件接口" data-lines="work-orders API 负责工单主体、工单任务和备件关联。|它承接异常维修闭环，并将处理过程沉淀为审计与分析数据。" transform="translate(188 388)">
+      <rect x="0" y="0" width="146" height="98" rx="14" fill="#f5f9ff" stroke="#7ea6cd" />
+      <text class="node-title" x="16" y="34">工单 API</text>
+      <text class="node-subtitle" x="16" y="58">工单 / 备件接口</text>
+    </g>
+
+    <g class="node-card" data-tags="overview governance" data-name="audit middleware + audit API" data-subtitle="写审计 / 日志查询" data-lines="_middleware.js 会在成功写请求后记录审计日志。|audit-logs/bootstrap 用于报表展示与筛选。|这层体现了系统设计中的统一治理思路。" transform="translate(26 528)">
+      <rect x="0" y="0" width="308" height="66" rx="14" fill="#eff7fd" stroke="#6ea4cb" />
+      <text class="node-title" x="16" y="32">审计 API</text>
+      <text class="node-subtitle" x="16" y="54">写审计 / 日志查询</text>
+    </g>
+  </g>
+
+  <g id="edges">
+    <path class="edge active" data-tags="overview access" d="M 268 356 L 348 356" />
+    <text class="edge-label" x="286" y="344">角色进入首页</text>
+
+    <path class="edge active" data-tags="overview access" d="M 518 354 L 530 354 L 530 294 L 806 294 L 806 318" />
+    <text class="edge-label" x="628" y="286">登录 / 初始化</text>
+
+    <path class="edge active" data-tags="overview access" d="M 722 354 L 736 354 L 736 294 L 972 294 L 972 318" />
+    <text class="edge-label" x="828" y="286">权限配置</text>
+
+    <path class="edge active" data-tags="overview masterdata inspection workorder" d="M 518 498 L 532 498 L 532 430 L 806 430 L 806 458" />
+    <text class="edge-label" x="626" y="422">主数据读写</text>
+
+    <path class="edge active" data-tags="overview inspection workorder" d="M 722 498 L 764 498 L 764 646 L 806 646" />
+    <text class="edge-label" x="736" y="568">点检执行</text>
+
+    <path class="edge active" data-tags="overview workorder governance" d="M 518 638 L 532 638 L 532 708 L 968 708 L 968 646" />
+    <text class="edge-label" x="650" y="700">工单处理</text>
+
+    <path class="edge active" data-tags="overview governance" d="M 722 638 L 764 638 L 764 771 L 806 771" />
+    <text class="edge-label" x="736" y="706">审计查询</text>
+
+    <path class="edge active" data-tags="overview governance" d="M 518 765 L 806 765" />
+    <text class="edge-label" x="634" y="753">分析读取</text>
+  </g>
+
+  <g transform="translate(70 850)">
+    <rect class="pill" x="0" y="0" width="110" height="32" />
+    <text class="pill-text" x="55" y="21" text-anchor="middle">交互说明</text>
+    <text class="legend-text" x="126" y="21">点击顶部按钮切换流程，点击卡片高亮对应主链路。</text>
+
+    <rect class="legend-chip" x="720" y="4" width="18" height="18" fill="#fff4e4" stroke="#d6b47f" />
+    <text class="legend-text" x="746" y="18">入口与权限</text>
+    <rect class="legend-chip" x="858" y="4" width="18" height="18" fill="#f6fbff" stroke="#89b5d6" />
+    <text class="legend-text" x="884" y="18">业务主流程</text>
+    <rect class="legend-chip" x="1018" y="4" width="18" height="18" fill="#eef7fd" stroke="#6ea4cb" />
+    <text class="legend-text" x="1044" y="18">治理与分析</text>
+  </g>
+
+  <script><![CDATA[
+    (function () {
+      var buttons = Array.prototype.slice.call(document.querySelectorAll('.button'));
+      var nodes = Array.prototype.slice.call(document.querySelectorAll('.node-card'));
+      var edges = Array.prototype.slice.call(document.querySelectorAll('.edge'));
+
+      function hasFocusTag(element, focus) {
+        var tags = (element.getAttribute('data-tags') || '').split(/\s+/).filter(Boolean);
+        return focus === 'overview' || tags.indexOf(focus) >= 0 || tags.indexOf('overview') >= 0 && focus === 'overview';
+      }
+
+      function applyFocus(focus) {
+        buttons.forEach(function (button) {
+          button.classList.toggle('active', button.getAttribute('data-focus') === focus);
+        });
+
+        nodes.forEach(function (node) {
+          var active = hasFocusTag(node, focus);
+          node.classList.toggle('dimmed', !active);
+        });
+
+        edges.forEach(function (edge) {
+          var active = hasFocusTag(edge, focus);
+          edge.classList.toggle('active', active);
+          edge.classList.toggle('dimmed', !active);
+        });
+      }
+
+      buttons.forEach(function (button) {
+        button.addEventListener('click', function () {
+          nodes.forEach(function (node) { node.classList.remove('selected'); });
+          applyFocus(button.getAttribute('data-focus'));
+        });
+      });
+
+      nodes.forEach(function (node) {
+        node.addEventListener('click', function () {
+          var tags = (node.getAttribute('data-tags') || '').split(/\s+/).filter(Boolean);
+          var nextFocus = 'overview';
+          for (var index = 0; index < tags.length; index += 1) {
+            if (tags[index] !== 'overview') {
+              nextFocus = tags[index];
+              break;
+            }
+          }
+          applyFocus(nextFocus);
+          nodes.forEach(function (item) { item.classList.remove('selected'); });
+          node.classList.add('selected');
+        });
+      });
+
+      applyFocus('overview');
+    })();
+  ]]></script>
+</svg>
