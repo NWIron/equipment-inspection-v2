@@ -19,6 +19,7 @@ const toastStore = useMessageToastStore()
 const isTaskModalOpen = ref(false)
 const editingTaskId = ref('')
 const isSubmitting = ref(false)
+const isFilterPanelCollapsed = ref(true)
 
 const taskForm = reactive({
   taskName: '',
@@ -30,6 +31,14 @@ const taskForm = reactive({
   status: '待执行',
 })
 
+const filters = reactive({
+  keyword: '',
+  status: '',
+  priority: '',
+  equipmentId: '',
+  inspectorUserId: '',
+})
+
 const taskDirectory = computed(() => inspectionTaskStore.taskDirectory)
 const equipmentOptions = computed(() => inspectionTaskStore.equipmentOptions)
 const inspectorOptions = computed(() => inspectionTaskStore.inspectorOptions)
@@ -39,6 +48,27 @@ const selectedEquipment = computed(() => inspectionTaskStore.getEquipmentById(ta
 const inspectionItemPreview = computed(() => selectedEquipment.value?.inspectionItems ?? [])
 const taskModalTitle = computed(() =>
   editingTaskId.value ? pickLocaleText('编辑点检任务', 'Edit inspection task') : pickLocaleText('创建点检任务', 'Create inspection task'),
+)
+const filteredTaskDirectory = computed(() =>
+  taskDirectory.value.filter((task) => {
+    const keyword = String(filters.keyword ?? '').trim().toLowerCase()
+    const matchesKeyword =
+      !keyword ||
+      [
+        task.taskName,
+        task.taskNumber,
+        task.equipment?.equipmentCode,
+        task.equipment?.description,
+        task.inspector?.name,
+        task.inspector?.accountName,
+      ].some((value) => String(value ?? '').trim().toLowerCase().includes(keyword))
+    const matchesStatus = !filters.status || task.status === filters.status
+    const matchesPriority = !filters.priority || task.priority === filters.priority
+    const matchesEquipment = !filters.equipmentId || task.equipmentId === filters.equipmentId
+    const matchesInspector = !filters.inspectorUserId || task.inspectorUserId === filters.inspectorUserId
+
+    return matchesKeyword && matchesStatus && matchesPriority && matchesEquipment && matchesInspector
+  }),
 )
 
 function getTaskStatusClass(status) {
@@ -58,6 +88,22 @@ function clearFeedback() {
 
 function goBack() {
   goBackOrHome(router)
+}
+
+function toggleFilterPanel() {
+  isFilterPanelCollapsed.value = !isFilterPanelCollapsed.value
+}
+
+function getFilterToggleLabel() {
+  return isFilterPanelCollapsed.value ? pickLocaleText('展开筛选', 'Show filters') : pickLocaleText('收起筛选', 'Hide filters')
+}
+
+function resetFilters() {
+  filters.keyword = ''
+  filters.status = ''
+  filters.priority = ''
+  filters.equipmentId = ''
+  filters.inspectorUserId = ''
 }
 
 function resetTaskForm() {
@@ -215,15 +261,78 @@ onMounted(async () => {
           <p class="kicker">Inspection Tasks</p>
           <h3 class="section-title">{{ pickLocaleText('任务清单', 'Task list') }}</h3>
         </div>
-        <button class="button button-success" type="button" @click="openTaskModal">{{ pickLocaleText('创建点检任务', 'Create inspection task') }}</button>
+        <div class="action-row">
+          <button
+            class="button button-ghost button-icon filter-toggle"
+            :class="{ 'is-active': !isFilterPanelCollapsed }"
+            type="button"
+            :aria-label="getFilterToggleLabel()"
+            :aria-pressed="!isFilterPanelCollapsed"
+            :title="getFilterToggleLabel()"
+            @click="toggleFilterPanel"
+          >
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M2.5 3.5h11L9.25 8.3v3.05l-2.5 1.15V8.3L2.5 3.5z"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.3"
+              />
+            </svg>
+          </button>
+          <button class="button button-success" type="button" @click="openTaskModal">{{ pickLocaleText('创建点检任务', 'Create inspection task') }}</button>
+        </div>
       </div>
 
       <div v-if="inspectionTaskStore.isInitializing" class="notice">{{ pickLocaleText('正在加载点检任务主数据...', 'Loading inspection task master data...') }}</div>
 
+      <div v-if="taskDirectory.length && !isFilterPanelCollapsed" class="filter-toolbar surface-muted">
+        <label class="filter-field filter-field-search">
+          <span>{{ pickLocaleText('关键字', 'Keyword') }}</span>
+          <input
+            v-model="filters.keyword"
+            type="search"
+            :placeholder="pickLocaleText('任务名称、任务单号、设备、点检员', 'Task name, task number, equipment, inspector')"
+          />
+        </label>
+        <label class="filter-field">
+          <span>{{ pickLocaleText('状态', 'Status') }}</span>
+          <select v-model="filters.status">
+            <option value="">{{ pickLocaleText('全部状态', 'All statuses') }}</option>
+            <option v-for="status in statusOptions" :key="status" :value="status">{{ translateStaticText(status) }}</option>
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>{{ pickLocaleText('优先级', 'Priority') }}</span>
+          <select v-model="filters.priority">
+            <option value="">{{ pickLocaleText('全部优先级', 'All priorities') }}</option>
+            <option v-for="priority in priorityOptions" :key="priority" :value="priority">{{ translateStaticText(priority) }}</option>
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>{{ pickLocaleText('设备', 'Equipment') }}</span>
+          <select v-model="filters.equipmentId">
+            <option value="">{{ pickLocaleText('全部设备', 'All equipment') }}</option>
+            <option v-for="equipment in equipmentOptions" :key="equipment.id" :value="equipment.id">{{ equipment.equipmentCode }}</option>
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>{{ pickLocaleText('点检员', 'Inspector') }}</span>
+          <select v-model="filters.inspectorUserId">
+            <option value="">{{ pickLocaleText('全部点检员', 'All inspectors') }}</option>
+            <option v-for="inspector in inspectorOptions" :key="inspector.id" :value="inspector.id">{{ inspector.name }}</option>
+          </select>
+        </label>
+        <button class="button button-ghost filter-reset" type="button" @click="resetFilters">{{ pickLocaleText('重置筛选', 'Reset filters') }}</button>
+      </div>
+
       <div v-if="!taskDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有点检任务。', 'There are no inspection tasks yet.') }}</div>
 
+      <div v-else-if="!filteredTaskDirectory.length" class="empty-state">{{ pickLocaleText('没有符合筛选条件的点检任务。', 'No inspection tasks match the current filters.') }}</div>
+
       <div v-else class="entity-list">
-        <article v-for="task in taskDirectory" :key="task.id" class="entity-card">
+        <article v-for="task in filteredTaskDirectory" :key="task.id" class="entity-card">
           <div class="entity-card__header">
             <div>
               <h4>{{ task.taskName }}</h4>
@@ -389,6 +498,41 @@ onMounted(async () => {
   font-size: 1.12rem;
 }
 
+.filter-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #f6f8fa;
+}
+
+.filter-field {
+  display: grid;
+  gap: 6px;
+}
+
+.filter-field span {
+  font-size: 0.78rem;
+  color: var(--color-text-soft);
+}
+
+.filter-field-search {
+  grid-column: span 2;
+}
+
+.filter-reset {
+  align-self: end;
+  justify-self: start;
+}
+
+.filter-toggle.is-active {
+  color: var(--color-brand);
+  border-color: rgba(9, 105, 218, 0.28);
+  background: rgba(9, 105, 218, 0.08);
+}
+
 .entity-list {
   display: grid;
   gap: 10px;
@@ -543,6 +687,10 @@ select:focus {
   .section-headline {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .filter-field-search {
+    grid-column: span 1;
   }
 
   .form-two-column {

@@ -23,6 +23,7 @@ const isSubmitting = ref(false)
 const isConfirming = ref(false)
 const confirmingWorkOrderId = ref('')
 const sourceInspectionTask = ref(null)
+const isFilterPanelCollapsed = ref(true)
 
 const workOrderForm = reactive({
   equipmentId: '',
@@ -37,6 +38,14 @@ const confirmForm = reactive({
   confirmedAt: createDefaultDateTime(),
 })
 
+const filters = reactive({
+  keyword: '',
+  status: '',
+  priority: '',
+  equipmentId: '',
+  creatorUserId: '',
+})
+
 const workOrders = computed(() => workOrderStore.workOrderDirectory)
 const equipmentOptions = computed(() => workOrderStore.equipmentOptions)
 const creatorOptions = computed(() => workOrderStore.creatorOptions)
@@ -45,6 +54,30 @@ const priorityOptions = computed(() => workOrderStore.priorityOptions)
 const selectedCreator = computed(() => workOrderStore.getCreatorById(workOrderForm.createdByUserId))
 const workOrderModalTitle = computed(() =>
   editingWorkOrderId.value ? pickLocaleText('编辑维修工单', 'Edit work order') : pickLocaleText('创建维修工单', 'Create work order'),
+)
+const workOrderStatusOptions = computed(() => ['待派工', '维修中', '待验收', '待确认', '已确认'])
+const filteredWorkOrders = computed(() =>
+  workOrders.value.filter((workOrder) => {
+    const keyword = String(filters.keyword ?? '').trim().toLowerCase()
+    const matchesKeyword =
+      !keyword ||
+      [
+        workOrder.orderNumber,
+        workOrder.equipment?.equipmentCode,
+        workOrder.equipment?.description,
+        workOrder.equipment?.location,
+        workOrder.faultCode?.code,
+        workOrder.faultCode?.description,
+        workOrder.creator?.name,
+        workOrder.sourceInspectionTask?.taskNumber,
+      ].some((value) => String(value ?? '').trim().toLowerCase().includes(keyword))
+    const matchesStatus = !filters.status || workOrder.status === filters.status
+    const matchesPriority = !filters.priority || workOrder.priority === filters.priority
+    const matchesEquipment = !filters.equipmentId || workOrder.equipmentId === filters.equipmentId
+    const matchesCreator = !filters.creatorUserId || workOrder.createdByUserId === filters.creatorUserId
+
+    return matchesKeyword && matchesStatus && matchesPriority && matchesEquipment && matchesCreator
+  }),
 )
 
 function getWorkOrderStatusClass(status) {
@@ -62,6 +95,22 @@ function setFeedback(message, type = 'success') {
 
 function goBack() {
   goBackOrHome(router)
+}
+
+function toggleFilterPanel() {
+  isFilterPanelCollapsed.value = !isFilterPanelCollapsed.value
+}
+
+function getFilterToggleLabel() {
+  return isFilterPanelCollapsed.value ? pickLocaleText('展开筛选', 'Show filters') : pickLocaleText('收起筛选', 'Hide filters')
+}
+
+function resetFilters() {
+  filters.keyword = ''
+  filters.status = ''
+  filters.priority = ''
+  filters.equipmentId = ''
+  filters.creatorUserId = ''
 }
 
 function applyDraftToForm(draft = null) {
@@ -220,15 +269,78 @@ onMounted(async () => {
           <p class="kicker">Work Orders</p>
           <h3 class="section-title">{{ pickLocaleText('工单清单', 'Work-order list') }}</h3>
         </div>
-        <button class="button button-success" type="button" @click="openCreateModal">{{ pickLocaleText('创建维修工单', 'Create work order') }}</button>
+        <div class="action-row">
+          <button
+            class="button button-ghost button-icon filter-toggle"
+            :class="{ 'is-active': !isFilterPanelCollapsed }"
+            type="button"
+            :aria-label="getFilterToggleLabel()"
+            :aria-pressed="!isFilterPanelCollapsed"
+            :title="getFilterToggleLabel()"
+            @click="toggleFilterPanel"
+          >
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M2.5 3.5h11L9.25 8.3v3.05l-2.5 1.15V8.3L2.5 3.5z"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.3"
+              />
+            </svg>
+          </button>
+          <button class="button button-success" type="button" @click="openCreateModal">{{ pickLocaleText('创建维修工单', 'Create work order') }}</button>
+        </div>
       </div>
 
       <div v-if="workOrderStore.isInitializing" class="notice">{{ pickLocaleText('正在加载维修工单主数据...', 'Loading work-order master data...') }}</div>
 
+      <div v-if="workOrders.length && !isFilterPanelCollapsed" class="filter-toolbar surface-muted">
+        <label class="filter-field filter-field-search">
+          <span>{{ pickLocaleText('关键字', 'Keyword') }}</span>
+          <input
+            v-model="filters.keyword"
+            type="search"
+            :placeholder="pickLocaleText('工单号、设备、故障代码、创建人', 'Order number, equipment, fault code, creator')"
+          />
+        </label>
+        <label class="filter-field">
+          <span>{{ pickLocaleText('状态', 'Status') }}</span>
+          <select v-model="filters.status">
+            <option value="">{{ pickLocaleText('全部状态', 'All statuses') }}</option>
+            <option v-for="status in workOrderStatusOptions" :key="status" :value="status">{{ translateStaticText(status) }}</option>
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>{{ pickLocaleText('优先级', 'Priority') }}</span>
+          <select v-model="filters.priority">
+            <option value="">{{ pickLocaleText('全部优先级', 'All priorities') }}</option>
+            <option v-for="priority in priorityOptions" :key="priority" :value="priority">{{ translateStaticText(priority) }}</option>
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>{{ pickLocaleText('设备', 'Equipment') }}</span>
+          <select v-model="filters.equipmentId">
+            <option value="">{{ pickLocaleText('全部设备', 'All equipment') }}</option>
+            <option v-for="equipment in equipmentOptions" :key="equipment.id" :value="equipment.id">{{ equipment.equipmentCode }}</option>
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>{{ pickLocaleText('创建人', 'Created by') }}</span>
+          <select v-model="filters.creatorUserId">
+            <option value="">{{ pickLocaleText('全部创建人', 'All creators') }}</option>
+            <option v-for="creator in creatorOptions" :key="creator.id" :value="creator.id">{{ creator.name }}</option>
+          </select>
+        </label>
+        <button class="button button-ghost filter-reset" type="button" @click="resetFilters">{{ pickLocaleText('重置筛选', 'Reset filters') }}</button>
+      </div>
+
       <div v-else-if="!workOrders.length" class="empty-state">{{ pickLocaleText('当前还没有维修工单。', 'There are no work orders yet.') }}</div>
 
+      <div v-else-if="!filteredWorkOrders.length" class="empty-state">{{ pickLocaleText('没有符合筛选条件的维修工单。', 'No work orders match the current filters.') }}</div>
+
       <div v-else class="entity-list">
-        <article v-for="workOrder in workOrders" :key="workOrder.id" class="entity-card">
+        <article v-for="workOrder in filteredWorkOrders" :key="workOrder.id" class="entity-card">
           <div class="entity-card__header">
             <div>
               <h4>{{ workOrder.orderNumber }}</h4>
@@ -435,6 +547,41 @@ onMounted(async () => {
   font-size: 1.12rem;
 }
 
+.filter-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #f6f8fa;
+}
+
+.filter-field {
+  display: grid;
+  gap: 6px;
+}
+
+.filter-field span {
+  font-size: 0.78rem;
+  color: var(--color-text-soft);
+}
+
+.filter-field-search {
+  grid-column: span 2;
+}
+
+.filter-reset {
+  align-self: end;
+  justify-self: start;
+}
+
+.filter-toggle.is-active {
+  color: var(--color-brand);
+  border-color: rgba(9, 105, 218, 0.28);
+  background: rgba(9, 105, 218, 0.08);
+}
+
 .entity-list {
   display: grid;
   gap: 10px;
@@ -602,6 +749,10 @@ label > span,
   .modal-actions {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .filter-field-search {
+    grid-column: span 1;
   }
 
   .form-two-column {

@@ -79,6 +79,26 @@ const inspectionItemDirectory = computed(() => equipmentStore.inspectionItemDire
 const faultCodeDirectory = computed(() => equipmentStore.faultCodeDirectory)
 const sparePartDirectory = computed(() => equipmentStore.sparePartDirectory)
 const ownerOptions = computed(() => equipmentStore.ownerOptions)
+const filters = reactive({
+  equipmentKeyword: '',
+  equipmentStatus: '',
+  equipmentOwnerUserId: '',
+  taskListKeyword: '',
+  taskListAssignment: 'all',
+  inspectionItemKeyword: '',
+  inspectionItemAssignment: 'all',
+  faultCodeKeyword: '',
+  sparePartKeyword: '',
+  sparePartStock: 'all',
+  sparePartLink: 'all',
+})
+const filterPanelCollapsed = reactive({
+  equipment: true,
+  taskLists: true,
+  inspectionItems: true,
+  faultCodes: true,
+  spareParts: true,
+})
 const equipmentEditorTitle = computed(() =>
   editingEquipmentId.value ? pickLocaleText('编辑设备主数据', 'Edit equipment master data') : pickLocaleText('创建设备主数据', 'Create equipment master data'),
 )
@@ -93,6 +113,142 @@ const faultCodeEditorTitle = computed(() =>
 )
 const sparePartEditorTitle = computed(() =>
   editingSparePartId.value ? pickLocaleText('编辑备件', 'Edit spare part') : pickLocaleText('创建备件', 'Create spare part'),
+)
+
+function normalizeKeyword(value) {
+  return String(value ?? '').trim().toLowerCase()
+}
+
+function matchesKeyword(values, keyword) {
+  const normalizedKeyword = normalizeKeyword(keyword)
+
+  if (!normalizedKeyword) {
+    return true
+  }
+
+  return values.some((value) => normalizeKeyword(value).includes(normalizedKeyword))
+}
+
+function resetTabFilters(tab) {
+  if (tab === 'equipment') {
+    filters.equipmentKeyword = ''
+    filters.equipmentStatus = ''
+    filters.equipmentOwnerUserId = ''
+    return
+  }
+
+  if (tab === 'taskLists') {
+    filters.taskListKeyword = ''
+    filters.taskListAssignment = 'all'
+    return
+  }
+
+  if (tab === 'inspectionItems') {
+    filters.inspectionItemKeyword = ''
+    filters.inspectionItemAssignment = 'all'
+    return
+  }
+
+  if (tab === 'faultCodes') {
+    filters.faultCodeKeyword = ''
+    return
+  }
+
+  filters.sparePartKeyword = ''
+  filters.sparePartStock = 'all'
+  filters.sparePartLink = 'all'
+}
+
+function toggleFilterPanel(tab) {
+  filterPanelCollapsed[tab] = !filterPanelCollapsed[tab]
+}
+
+function getFilterToggleLabel(tab) {
+  return filterPanelCollapsed[tab] ? pickLocaleText('展开筛选', 'Show filters') : pickLocaleText('收起筛选', 'Hide filters')
+}
+
+const filteredEquipmentList = computed(() =>
+  equipmentList.value.filter((equipment) => {
+    const matchesStatus = !filters.equipmentStatus || equipment.status === filters.equipmentStatus
+    const matchesOwner = !filters.equipmentOwnerUserId || equipment.ownerUserId === filters.equipmentOwnerUserId
+    const matchesSearch = matchesKeyword(
+      [
+        equipment.equipmentCode,
+        equipment.description,
+        equipment.type,
+        equipment.model,
+        equipment.location,
+        equipment.owner?.name,
+        equipment.owner?.accountName,
+        ...equipment.taskLists.map((taskList) => taskList.code),
+        ...equipment.spareParts.map((sparePart) => sparePart.partNumber),
+      ],
+      filters.equipmentKeyword,
+    )
+
+    return matchesStatus && matchesOwner && matchesSearch
+  }),
+)
+
+const filteredTaskListDirectory = computed(() =>
+  taskListDirectory.value.filter((taskList) => {
+    const matchesSearch = matchesKeyword(
+      [taskList.code, taskList.description, ...taskList.inspectionItems.map((inspectionItem) => inspectionItem.code)],
+      filters.taskListKeyword,
+    )
+    const matchesAssignment =
+      filters.taskListAssignment === 'all' ||
+      (filters.taskListAssignment === 'assigned' && taskList.assignedEquipmentCount > 0) ||
+      (filters.taskListAssignment === 'unassigned' && taskList.assignedEquipmentCount === 0)
+
+    return matchesSearch && matchesAssignment
+  }),
+)
+
+const filteredInspectionItemDirectory = computed(() =>
+  inspectionItemDirectory.value.filter((inspectionItem) => {
+    const matchesSearch = matchesKeyword(
+      [inspectionItem.code, inspectionItem.description],
+      filters.inspectionItemKeyword,
+    )
+    const matchesAssignment =
+      filters.inspectionItemAssignment === 'all' ||
+      (filters.inspectionItemAssignment === 'linked' && inspectionItem.taskListCount > 0) ||
+      (filters.inspectionItemAssignment === 'unlinked' && inspectionItem.taskListCount === 0)
+
+    return matchesSearch && matchesAssignment
+  }),
+)
+
+const filteredFaultCodeDirectory = computed(() =>
+  faultCodeDirectory.value.filter((faultCode) =>
+    matchesKeyword([faultCode.code, faultCode.description], filters.faultCodeKeyword),
+  ),
+)
+
+const filteredSparePartDirectory = computed(() =>
+  sparePartDirectory.value.filter((sparePart) => {
+    const isLowStock = Number(sparePart.stockQuantity ?? 0) <= Number(sparePart.safetyStock ?? 0)
+    const matchesSearch = matchesKeyword(
+      [
+        sparePart.partNumber,
+        sparePart.description,
+        sparePart.unit,
+        ...sparePart.equipments.map((equipment) => equipment.equipmentCode),
+      ],
+      filters.sparePartKeyword,
+    )
+    const matchesStock =
+      filters.sparePartStock === 'all' ||
+      (filters.sparePartStock === 'low' && isLowStock) ||
+      (filters.sparePartStock === 'normal' && !isLowStock)
+    const matchesLink =
+      filters.sparePartLink === 'all' ||
+      (filters.sparePartLink === 'linked' && sparePart.equipments.length > 0) ||
+      (filters.sparePartLink === 'unlinked' && sparePart.equipments.length === 0)
+
+    return matchesSearch && matchesStock && matchesLink
+  }),
 )
 
 function setFeedback(message, type = 'success') {
@@ -512,13 +668,62 @@ onMounted(async () => {
               <p class="kicker">Equipment Assets</p>
               <h3 class="section-title">{{ pickLocaleText('设备台账', 'Equipment register') }}</h3>
             </div>
-            <button class="button button-success" type="button" @click="openEquipmentModal">{{ pickLocaleText('新建设备', 'Create equipment') }}</button>
+            <div class="action-row">
+              <button
+                class="button button-ghost button-icon filter-toggle"
+                :class="{ 'is-active': !filterPanelCollapsed.equipment }"
+                type="button"
+                :aria-label="getFilterToggleLabel('equipment')"
+                :aria-pressed="!filterPanelCollapsed.equipment"
+                :title="getFilterToggleLabel('equipment')"
+                @click="toggleFilterPanel('equipment')"
+              >
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path
+                    d="M2.5 3.5h11L9.25 8.3v3.05l-2.5 1.15V8.3L2.5 3.5z"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.3"
+                  />
+                </svg>
+              </button>
+              <button class="button button-success" type="button" @click="openEquipmentModal">{{ pickLocaleText('新建设备', 'Create equipment') }}</button>
+            </div>
+          </div>
+
+          <div v-if="equipmentList.length && !filterPanelCollapsed.equipment" class="filter-toolbar surface-muted">
+            <label class="filter-field filter-field-search">
+              <span>{{ pickLocaleText('关键字', 'Keyword') }}</span>
+              <input
+                v-model="filters.equipmentKeyword"
+                type="search"
+                :placeholder="pickLocaleText('设备编号、描述、型号、位置', 'Equipment code, description, model, location')"
+              />
+            </label>
+            <label class="filter-field">
+              <span>{{ pickLocaleText('状态', 'Status') }}</span>
+              <select v-model="filters.equipmentStatus">
+                <option value="">{{ pickLocaleText('全部状态', 'All statuses') }}</option>
+                <option v-for="status in STATUS_OPTIONS" :key="status" :value="status">{{ translateStaticText(status) }}</option>
+              </select>
+            </label>
+            <label class="filter-field">
+              <span>{{ pickLocaleText('责任人', 'Owner') }}</span>
+              <select v-model="filters.equipmentOwnerUserId">
+                <option value="">{{ pickLocaleText('全部责任人', 'All owners') }}</option>
+                <option v-for="owner in ownerOptions" :key="owner.id" :value="owner.id">{{ owner.name }}</option>
+              </select>
+            </label>
+            <button class="button button-ghost filter-reset" type="button" @click="resetTabFilters('equipment')">{{ pickLocaleText('重置筛选', 'Reset filters') }}</button>
           </div>
 
           <div v-if="!equipmentList.length" class="empty-state">{{ pickLocaleText('当前还没有设备主数据。', 'There is no equipment master data yet.') }}</div>
 
+          <div v-else-if="!filteredEquipmentList.length" class="empty-state">{{ pickLocaleText('没有符合筛选条件的设备。', 'No equipment matches the current filters.') }}</div>
+
           <div v-else class="entity-list">
-            <article v-for="equipment in equipmentList" :key="equipment.id" class="entity-card">
+            <article v-for="equipment in filteredEquipmentList" :key="equipment.id" class="entity-card">
               <div class="entity-card__header">
                 <div>
                   <h4>{{ equipment.equipmentCode }}</h4>
@@ -627,13 +832,52 @@ onMounted(async () => {
               <p class="kicker">Task Lists</p>
               <h3 class="section-title">{{ pickLocaleText('点检任务清单', 'Inspection task lists') }}</h3>
             </div>
-            <button class="button button-success" type="button" @click="openTaskListModal">{{ pickLocaleText('新建清单', 'Create list') }}</button>
+            <div class="action-row">
+              <button
+                class="button button-ghost button-icon filter-toggle"
+                :class="{ 'is-active': !filterPanelCollapsed.taskLists }"
+                type="button"
+                :aria-label="getFilterToggleLabel('taskLists')"
+                :aria-pressed="!filterPanelCollapsed.taskLists"
+                :title="getFilterToggleLabel('taskLists')"
+                @click="toggleFilterPanel('taskLists')"
+              >
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path
+                    d="M2.5 3.5h11L9.25 8.3v3.05l-2.5 1.15V8.3L2.5 3.5z"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.3"
+                  />
+                </svg>
+              </button>
+              <button class="button button-success" type="button" @click="openTaskListModal">{{ pickLocaleText('新建清单', 'Create list') }}</button>
+            </div>
+          </div>
+
+          <div v-if="taskListDirectory.length && !filterPanelCollapsed.taskLists" class="filter-toolbar surface-muted">
+            <label class="filter-field filter-field-search">
+              <span>{{ pickLocaleText('关键字', 'Keyword') }}</span>
+              <input v-model="filters.taskListKeyword" type="search" :placeholder="pickLocaleText('清单编号、描述、点检项', 'List code, description, inspection item')" />
+            </label>
+            <label class="filter-field">
+              <span>{{ pickLocaleText('分配状态', 'Assignment') }}</span>
+              <select v-model="filters.taskListAssignment">
+                <option value="all">{{ pickLocaleText('全部', 'All') }}</option>
+                <option value="assigned">{{ pickLocaleText('已分配设备', 'Assigned to equipment') }}</option>
+                <option value="unassigned">{{ pickLocaleText('未分配设备', 'Unassigned') }}</option>
+              </select>
+            </label>
+            <button class="button button-ghost filter-reset" type="button" @click="resetTabFilters('taskLists')">{{ pickLocaleText('重置筛选', 'Reset filters') }}</button>
           </div>
 
           <div v-if="!taskListDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有任务清单。', 'There are no task lists yet.') }}</div>
 
+          <div v-else-if="!filteredTaskListDirectory.length" class="empty-state">{{ pickLocaleText('没有符合筛选条件的任务清单。', 'No task lists match the current filters.') }}</div>
+
           <div v-else class="entity-list">
-            <article v-for="taskList in taskListDirectory" :key="taskList.id" class="entity-card">
+            <article v-for="taskList in filteredTaskListDirectory" :key="taskList.id" class="entity-card">
               <div class="entity-card__header">
                 <div>
                   <h4>{{ taskList.code }}</h4>
@@ -666,13 +910,52 @@ onMounted(async () => {
               <p class="kicker">Inspection Items</p>
               <h3 class="section-title">{{ pickLocaleText('点检项', 'Inspection items') }}</h3>
             </div>
-            <button class="button button-success" type="button" @click="openInspectionItemModal">{{ pickLocaleText('新建点检项', 'Create inspection item') }}</button>
+            <div class="action-row">
+              <button
+                class="button button-ghost button-icon filter-toggle"
+                :class="{ 'is-active': !filterPanelCollapsed.inspectionItems }"
+                type="button"
+                :aria-label="getFilterToggleLabel('inspectionItems')"
+                :aria-pressed="!filterPanelCollapsed.inspectionItems"
+                :title="getFilterToggleLabel('inspectionItems')"
+                @click="toggleFilterPanel('inspectionItems')"
+              >
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path
+                    d="M2.5 3.5h11L9.25 8.3v3.05l-2.5 1.15V8.3L2.5 3.5z"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.3"
+                  />
+                </svg>
+              </button>
+              <button class="button button-success" type="button" @click="openInspectionItemModal">{{ pickLocaleText('新建点检项', 'Create inspection item') }}</button>
+            </div>
+          </div>
+
+          <div v-if="inspectionItemDirectory.length && !filterPanelCollapsed.inspectionItems" class="filter-toolbar surface-muted">
+            <label class="filter-field filter-field-search">
+              <span>{{ pickLocaleText('关键字', 'Keyword') }}</span>
+              <input v-model="filters.inspectionItemKeyword" type="search" :placeholder="pickLocaleText('点检项编号或描述', 'Inspection item code or description')" />
+            </label>
+            <label class="filter-field">
+              <span>{{ pickLocaleText('关联状态', 'Link status') }}</span>
+              <select v-model="filters.inspectionItemAssignment">
+                <option value="all">{{ pickLocaleText('全部', 'All') }}</option>
+                <option value="linked">{{ pickLocaleText('已关联清单', 'Linked to a list') }}</option>
+                <option value="unlinked">{{ pickLocaleText('未关联清单', 'Not linked') }}</option>
+              </select>
+            </label>
+            <button class="button button-ghost filter-reset" type="button" @click="resetTabFilters('inspectionItems')">{{ pickLocaleText('重置筛选', 'Reset filters') }}</button>
           </div>
 
           <div v-if="!inspectionItemDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有点检项。', 'There are no inspection items yet.') }}</div>
 
+          <div v-else-if="!filteredInspectionItemDirectory.length" class="empty-state">{{ pickLocaleText('没有符合筛选条件的点检项。', 'No inspection items match the current filters.') }}</div>
+
           <div v-else class="entity-list">
-            <article v-for="inspectionItem in inspectionItemDirectory" :key="inspectionItem.id" class="entity-card">
+            <article v-for="inspectionItem in filteredInspectionItemDirectory" :key="inspectionItem.id" class="entity-card">
               <div class="entity-card__header">
                 <div>
                   <h4>{{ inspectionItem.code }}</h4>
@@ -700,13 +983,44 @@ onMounted(async () => {
               <p class="kicker">Fault Codes</p>
               <h3 class="section-title">{{ pickLocaleText('故障代码', 'Fault codes') }}</h3>
             </div>
-            <button class="button button-success" type="button" @click="openFaultCodeModal">{{ pickLocaleText('新建故障代码', 'Create fault code') }}</button>
+            <div class="action-row">
+              <button
+                class="button button-ghost button-icon filter-toggle"
+                :class="{ 'is-active': !filterPanelCollapsed.faultCodes }"
+                type="button"
+                :aria-label="getFilterToggleLabel('faultCodes')"
+                :aria-pressed="!filterPanelCollapsed.faultCodes"
+                :title="getFilterToggleLabel('faultCodes')"
+                @click="toggleFilterPanel('faultCodes')"
+              >
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path
+                    d="M2.5 3.5h11L9.25 8.3v3.05l-2.5 1.15V8.3L2.5 3.5z"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.3"
+                  />
+                </svg>
+              </button>
+              <button class="button button-success" type="button" @click="openFaultCodeModal">{{ pickLocaleText('新建故障代码', 'Create fault code') }}</button>
+            </div>
+          </div>
+
+          <div v-if="faultCodeDirectory.length && !filterPanelCollapsed.faultCodes" class="filter-toolbar surface-muted">
+            <label class="filter-field filter-field-search">
+              <span>{{ pickLocaleText('关键字', 'Keyword') }}</span>
+              <input v-model="filters.faultCodeKeyword" type="search" :placeholder="pickLocaleText('故障代码或描述', 'Fault code or description')" />
+            </label>
+            <button class="button button-ghost filter-reset" type="button" @click="resetTabFilters('faultCodes')">{{ pickLocaleText('重置筛选', 'Reset filters') }}</button>
           </div>
 
           <div v-if="!faultCodeDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有故障代码。', 'There are no fault codes yet.') }}</div>
 
+          <div v-else-if="!filteredFaultCodeDirectory.length" class="empty-state">{{ pickLocaleText('没有符合筛选条件的故障代码。', 'No fault codes match the current filters.') }}</div>
+
           <div v-else class="entity-list">
-            <article v-for="faultCode in faultCodeDirectory" :key="faultCode.id" class="entity-card">
+            <article v-for="faultCode in filteredFaultCodeDirectory" :key="faultCode.id" class="entity-card">
               <div class="entity-card__header">
                 <div>
                   <h4>{{ faultCode.code }}</h4>
@@ -734,15 +1048,60 @@ onMounted(async () => {
               <h3 class="section-title">{{ pickLocaleText('设备备件', 'Spare parts') }}</h3>
             </div>
             <div class="action-row">
+              <button
+                class="button button-ghost button-icon filter-toggle"
+                :class="{ 'is-active': !filterPanelCollapsed.spareParts }"
+                type="button"
+                :aria-label="getFilterToggleLabel('spareParts')"
+                :aria-pressed="!filterPanelCollapsed.spareParts"
+                :title="getFilterToggleLabel('spareParts')"
+                @click="toggleFilterPanel('spareParts')"
+              >
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path
+                    d="M2.5 3.5h11L9.25 8.3v3.05l-2.5 1.15V8.3L2.5 3.5z"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.3"
+                  />
+                </svg>
+              </button>
               <button class="button button-success" type="button" @click="openSparePartModal">{{ pickLocaleText('新建备件', 'Create spare part') }}</button>
               <button class="button button-ghost" type="button" @click="openAutoPurchasePlaceholder">{{ pickLocaleText('自动采购备件', 'Automatic purchasing') }}</button>
             </div>
           </div>
 
+          <div v-if="sparePartDirectory.length && !filterPanelCollapsed.spareParts" class="filter-toolbar surface-muted">
+            <label class="filter-field filter-field-search">
+              <span>{{ pickLocaleText('关键字', 'Keyword') }}</span>
+              <input v-model="filters.sparePartKeyword" type="search" :placeholder="pickLocaleText('备件编号、描述、设备编号', 'Part number, description, equipment code')" />
+            </label>
+            <label class="filter-field">
+              <span>{{ pickLocaleText('库存状态', 'Stock status') }}</span>
+              <select v-model="filters.sparePartStock">
+                <option value="all">{{ pickLocaleText('全部', 'All') }}</option>
+                <option value="low">{{ pickLocaleText('低于安全库存', 'At or below safety stock') }}</option>
+                <option value="normal">{{ pickLocaleText('高于安全库存', 'Above safety stock') }}</option>
+              </select>
+            </label>
+            <label class="filter-field">
+              <span>{{ pickLocaleText('关联设备', 'Equipment link') }}</span>
+              <select v-model="filters.sparePartLink">
+                <option value="all">{{ pickLocaleText('全部', 'All') }}</option>
+                <option value="linked">{{ pickLocaleText('已关联设备', 'Linked equipment') }}</option>
+                <option value="unlinked">{{ pickLocaleText('未关联设备', 'No linked equipment') }}</option>
+              </select>
+            </label>
+            <button class="button button-ghost filter-reset" type="button" @click="resetTabFilters('spareParts')">{{ pickLocaleText('重置筛选', 'Reset filters') }}</button>
+          </div>
+
           <div v-if="!sparePartDirectory.length" class="empty-state">{{ pickLocaleText('当前还没有备件信息。', 'There is no spare-part data yet.') }}</div>
 
+          <div v-else-if="!filteredSparePartDirectory.length" class="empty-state">{{ pickLocaleText('没有符合筛选条件的备件。', 'No spare parts match the current filters.') }}</div>
+
           <div v-else class="entity-list">
-            <article v-for="sparePart in sparePartDirectory" :key="sparePart.id" class="entity-card">
+            <article v-for="sparePart in filteredSparePartDirectory" :key="sparePart.id" class="entity-card">
               <div class="entity-card__header">
                 <div>
                   <h4>{{ sparePart.partNumber }}</h4>
@@ -1206,6 +1565,41 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.filter-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #f6f8fa;
+}
+
+.filter-field {
+  display: grid;
+  gap: 6px;
+}
+
+.filter-field span {
+  font-size: 0.78rem;
+  color: var(--color-text-soft);
+}
+
+.filter-field-search {
+  grid-column: span 2;
+}
+
+.filter-reset {
+  align-self: end;
+  justify-self: start;
+}
+
+.filter-toggle.is-active {
+  color: var(--color-brand);
+  border-color: rgba(9, 105, 218, 0.28);
+  background: rgba(9, 105, 218, 0.08);
+}
+
 .section-title {
   margin: 4px 0 0;
   font-size: 1.12rem;
@@ -1370,6 +1764,10 @@ select:focus {
   .section-headline {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .filter-field-search {
+    grid-column: span 1;
   }
 
   .form-two-column {
